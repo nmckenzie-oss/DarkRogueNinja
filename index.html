@@ -1,0 +1,2491 @@
+<!doctype html>
+<html lang="en">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dark Rogue</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap');
+
+    body {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      font-family: 'Lexend', sans-serif;
+      background: #0a0a0a;
+      overflow: hidden;
+    }
+    html { height: 100%; }
+
+    #app {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a0a2e 0%, #0f051d 100%);
+    }
+
+    canvas {
+      border: 4px solid #6a0572;
+      box-shadow: 0 0 30px rgba(106, 5, 114, 0.6);
+      display: block;
+    }
+
+    .hud {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    .panel {
+      background: rgba(26, 10, 46, 0.95);
+      border: 3px solid #6a0572;
+      padding: 12px;
+      border-radius: 8px;
+      color: #e94560;
+      font-size: 14px;
+      font-weight: bold;
+    }
+    .panel div { margin: 5px 0; }
+
+    .overlay {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .overlay.show { display: flex; }
+
+    .box {
+      background: linear-gradient(135deg, #2d1b3d, #1a0a2e);
+      border: 4px solid #6a0572;
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 90%;
+      overflow-y: auto;
+      box-shadow: 0 0 50px rgba(106, 5, 114, 0.8);
+    }
+
+    .title {
+      color: #e94560;
+      font-size: 32px;
+      text-align: center;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+    }
+
+    .text {
+      color: #00d4ff;
+      font-size: 16px;
+      line-height: 1.6;
+      margin: 10px 0;
+    }
+
+    .btn {
+      background: #6a0572;
+      border: 3px solid #e94560;
+      color: #fff;
+      padding: 12px 30px;
+      font-size: 18px;
+      cursor: pointer;
+      border-radius: 8px;
+      margin: 10px auto;
+      font-family: 'Lexend', sans-serif;
+      font-weight: bold;
+      transition: all 0.2s;
+      display: block;
+    }
+    .btn:hover { background: #e94560; transform: scale(1.05); }
+
+    .option {
+      background: #16213e;
+      border: 3px solid #6a0572;
+      color: #fff;
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .option:hover { background: #6a0572; transform: translateX(5px); }
+    .option.right { background: #2ecc71; border-color: #27ae60; }
+    .option.wrong { background: #e74c3c; border-color: #c0392b; }
+    .option.disabled { pointer-events: none; opacity: 0.6; }
+
+    .shop-item {
+      background: #16213e;
+      border: 3px solid #d4af37;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 8px;
+    }
+    .shop-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+    .shop-name { color: #fff; font-size: 16px; font-weight: bold; }
+    .shop-cost { color: #d4af37; font-size: 16px; }
+    .shop-desc { color: #00d4ff; font-size: 13px; margin-bottom: 5px; }
+    .shop-owned { color: #2ecc71; font-size: 13px; margin-bottom: 8px; }
+    .shop-btn {
+      background: #d4af37; border: 2px solid #b8941e; color: #1a0a2e;
+      padding: 6px 15px; font-size: 13px; cursor: pointer; border-radius: 6px;
+      font-family: 'Lexend', sans-serif; font-weight: bold;
+    }
+    .shop-btn:hover { background: #f0c851; }
+    .shop-btn:disabled { background: #666; border-color: #444; color: #999; cursor: not-allowed; }
+
+    #screenWipe {
+      position: fixed;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent 0%, #0a0a0a 20%, #0a0a0a 80%, transparent 100%);
+      z-index: 200;
+      pointer-events: none;
+      opacity: 0;
+    }
+    #screenWipe.wipe { animation: wipeAcross 1.5s ease-in-out; }
+    @keyframes wipeAcross {
+      0% { left: -100%; opacity: 1; }
+      50% { left: 0%; opacity: 1; }
+      100% { left: 100%; opacity: 1; }
+    }
+  </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div id="app">
+   <canvas id="canvas" width="800" height="600" aria-label="Game canvas"></canvas>
+  </div>
+  <div class="hud" aria-live="polite">
+   <div class="panel">
+    <div>
+     ❤️ HP: <span id="hpText">100/100</span>
+    </div>
+    <div>
+     ⭐ LVL <span id="lvl">1</span>
+    </div>
+    <div>
+     💀 <span id="kills">0</span>
+    </div>
+   </div>
+   <div class="panel">
+    <div>
+     ⭐ XP: <span id="xpText">0</span>
+    </div>
+    <div>
+     🏃 Run <span id="run">1</span>
+    </div>
+    <div>
+     ⏱️ <span id="time">0</span>s
+    </div>
+    <div>
+     🪙 <span id="coins">0</span>
+    </div>
+   </div>
+  </div>
+  <div id="startOverlay" class="overlay show" role="dialog" aria-modal="true">
+   <div class="box">
+    <h1 class="title" id="titleText">Dark Rogue</h1>
+    <p class="text">🥷 You are a ninja trapped in place!</p>
+    <p class="text">🎯 Click to throw shurikens at enemies</p>
+    <p class="text" id="enemyLine">👾 Defeat enemies to gain XP and coins</p>
+    <p class="text">📚 Answer quiz questions for upgrades</p>
+    <p class="text" style="color: #ff6b35; font-weight: bold;">🗿 Mud Golems can only be defeated by shadow traps!</p><button class="btn" id="startBtn">Start Game</button>
+   </div>
+  </div>
+  <div id="quizOverlay" class="overlay" role="dialog" aria-modal="true">
+   <div class="box">
+    <h2 class="title">Level Up Quiz!</h2>
+    <p class="text" id="quizNum"></p>
+    <p class="text" id="quizQ" style="font-weight: bold; font-size: 18px;"></p>
+    <div id="quizOpts"></div>
+    <p class="text" id="quizResult" style="display: none; font-size: 20px;"></p>
+   </div>
+  </div>
+  <div id="bonusOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="bonusText">
+   <div class="box" style="text-align: center;">
+    <h2 class="title" style="color: #d4af37;">Perfect Score!</h2>
+    <p class="text" id="bonusText">4/4 correct — bonus powerup unlocked: <span id="bonusName" style="color:#fff; font-weight:bold;">TBD</span></p>
+   </div>
+  </div>
+  <div id="upgradeOverlay" class="overlay" role="dialog" aria-modal="true">
+   <div class="box">
+    <h2 class="title">Choose Upgrade!</h2>
+    <div id="upgradeOpts"></div>
+   </div>
+  </div>
+  <div id="screenWipe" aria-hidden="true"></div>
+  <div id="enemyGuideOverlay" class="overlay" role="dialog" aria-modal="true">
+   <div class="box">
+    <h2 class="title">Enemy Guide</h2>
+    <p class="text" style="text-align: center; margin-bottom: 20px;">Know your foes before battle!</p>
+    <div style="display: grid; gap: 15px;">
+     <div class="shop-item" style="border-color: #2ecc71;">
+      <div class="shop-header">
+       <div class="shop-name">
+        🟢 Slime
+       </div>
+       <div class="shop-cost" style="color: #f39c12;">
+        Speed: Medium
+       </div>
+      </div>
+      <div class="shop-desc">
+       Basic enemy • Defeated by shurikens
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #9b59b6;">
+      <div class="shop-header">
+       <div class="shop-name">
+        🦇 Bat
+       </div>
+       <div class="shop-cost" style="color: #e74c3c;">
+        Speed: Fast
+       </div>
+      </div>
+      <div class="shop-desc">
+       Spawns in groups • Low health • Quick attacks
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #3498db;">
+      <div class="shop-header">
+       <div class="shop-name">
+        👻 Ghost
+       </div>
+       <div class="shop-cost" style="color: #2ecc71;">
+        Speed: Slow
+       </div>
+      </div>
+      <div class="shop-desc">
+       Moves side-to-side • High health • Phasing movement
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #8b00ff;">
+      <div class="shop-header">
+       <div class="shop-name">
+        👁️ Eye
+       </div>
+       <div class="shop-cost" style="color: #2ecc71;">
+        Speed: Slow
+       </div>
+      </div>
+      <div class="shop-desc">
+       Teleports every 3 seconds • High health • Unpredictable
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #f8f8f0;">
+      <div class="shop-header">
+       <div class="shop-name">
+        💀 Skeleton Archer
+       </div>
+       <div class="shop-cost" style="color: #f39c12;">
+        Speed: Medium
+       </div>
+      </div>
+      <div class="shop-desc">
+       Ranged attacker • Shoots arrows • Keeps distance
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #5d4e37;">
+      <div class="shop-header">
+       <div class="shop-name">
+        🗿 Mud Golem
+       </div>
+       <div class="shop-cost" style="color: #27ae60;">
+        Speed: Very Slow
+       </div>
+      </div>
+      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
+       ⚠️ IMMUNE to shurikens • Only defeated by shadow traps
+      </div>
+      <div class="shop-desc">
+       Throws mud at enemies every 5s to double their health
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #3e2723;">
+      <div class="shop-header">
+       <div class="shop-name">
+        🌳 Tree Golem
+       </div>
+       <div class="shop-cost" style="color: #27ae60;">
+        Speed: Very Slow
+       </div>
+      </div>
+      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
+       ⚠️ IMMUNE to shurikens • Only defeated by blow darts
+      </div>
+      <div class="shop-desc">
+       Moves in straight lines • Spawns root spikes that block shurikens
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #616161;">
+      <div class="shop-header">
+       <div class="shop-name">
+        💨 Smoke Golem
+       </div>
+       <div class="shop-cost" style="color: #f39c12;">
+        Speed: Medium
+       </div>
+      </div>
+      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
+       ⚠️ IMMUNE to shurikens • Only defeated by smoke bombs
+      </div>
+      <div class="shop-desc">
+       Leaves smoke trail that buffs nearby enemies (+50% health &amp; speed)
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #d32f2f;">
+      <div class="shop-header">
+       <div class="shop-name">
+        🔥 Fire Golem
+       </div>
+       <div class="shop-cost" style="color: #f39c12;">
+        Speed: Slow → Fast
+       </div>
+      </div>
+      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
+       ⚠️ IMMUNE to ricochet • Only defeated by direct shuriken hits
+      </div>
+      <div class="shop-desc">
+       Splits into 2 smaller golems on defeat (full → half → quarter)
+      </div>
+     </div>
+     <div class="shop-item" style="border-color: #9ca3af;">
+      <div class="shop-header">
+       <div class="shop-name">
+        ⚙️ Metal Variants
+       </div>
+       <div class="shop-cost" style="color: #e74c3c;">
+        Rare
+       </div>
+      </div>
+      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
+       ⚠️ IMMUNE to shuriken damage • Appears on any enemy type
+      </div>
+     </div>
+    </div><button class="btn" id="startGameBtn" style="margin-top: 20px;">Begin Adventure!</button>
+   </div>
+  </div>
+  <div id="deathOverlay" class="overlay" role="dialog" aria-modal="true">
+   <div class="box" style="text-align: center;">
+    <h2 class="title" style="font-size: 48px; color: #e74c3c;">💀 Health Lost 💀</h2>
+    <h3 class="title" style="font-size: 36px; color: #e94560; margin-top: 20px;">Game Over</h3>
+   </div>
+  </div>
+  <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
+   <div class="box">
+    <h2 class="title">Game Over!</h2>
+    <p class="text">Level: <span id="finalLvl">1</span></p>
+    <p class="text">💀 Monsters Defeated: <span id="finalKills">0</span></p>
+    <p class="text">Time: <span id="finalTime">0</span>s</p>
+    <p class="text">🪙 Earned: <span id="finalCoins">0</span></p>
+    <div style="margin-top: 20px;">
+     <h3 class="title" style="font-size: 24px; color: #d4af37;">🏪 Shop</h3>
+     <p class="text" style="color: #d4af37; font-size: 20px;">🪙 Total: <span id="totalCoins">0</span></p>
+     <div id="shopItems"></div>
+    </div><button class="btn" id="restartBtn">Play Again</button>
+   </div>
+  </div>
+  <script>
+    // Config editable via Canva
+    const defaultConfig = {
+      game_title: "Dark Rogue",
+      enemy_name: "enemies"
+    };
+
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Game state
+    let game = { active: false, paused: false, time: 0, frame: 0 };
+    let player = { x: 400, y: 300, hp: 100, maxHp: 100, level: 1, exp: 0, kills: 0 };
+    let progress = { totalCoins: 0, runCoins: 0, runNumber: 1, reverseShot: 0, ricochet: 0, smokeStart: 0, smokePriority: 0, smokeCluster: 0, powerupStart: 0, dartStart: 0, dartSpread: 0, dartShatter: 0, shadowStart: 0, shadowUtility: 0, shadowDouble: 0, wallBounce: 0, deaths: 0 };
+    let upgrades = { projSpeed: 5, damage: 1, cooldown: 900, smokeUnlocked: false, smokeDamage: 1, smokeCooldown: 4000, shadowUnlocked: false, shadowDamage: 2, shadowRadius: 100, shadowCooldown: 10000, dartUnlocked: false, dartAmount: 2, dartRange: 180, dartCooldown: 3000 };
+
+    // Entities and IDs
+    let nextEnemyId = 1;
+    let nextRootId = 1;
+    let enemies = [];        // { id, type, x, y, speed, hp, maxHp, anim, ... , dead? }
+    let bullets = [];        // { x,y,vx,vy,rot,ricochet,bounces,hitIds:number[] }
+    let enemyArrows = [];
+    let shadowTraps = [];
+    let darts = [];
+    let particles = [];
+    let rootSpikes = [];     // { id, x, y, hp, maxHp, spawnTime }
+
+    // Safety caps
+    const MAX_BULLETS = 60;
+    const MAX_DARTS = 40;
+
+    // Timers and inputs
+    let lastShoot = 0;
+    let lastSmoke = 0;
+    let lastShadow = 0;
+    let lastDart = 0;
+    let targetX = 401;
+    let targetY = 300;
+    let shadowReady = true;
+
+    // Quiz state
+    let quiz = { index: 0, correct: 0, forPowerup: false, pending: 0, usedQuestions: [] };
+
+    // Helpers
+    function norm(dx, dy) {
+      const d = Math.hypot(dx, dy);
+      if (d === 0) return { nx: 0, ny: 0, d: 0 };
+      return { nx: dx / d, ny: dy / d, d };
+    }
+    function clampParticles(max = 400) {
+      if (particles.length > max) {
+        const removeCount = Math.max(50, Math.floor((particles.length - max) * 0.25));
+        particles.splice(0, removeCount);
+      }
+    }
+
+    const questions = [
+      // Energy Questions (10)
+      {q: "What is the SI unit for energy?", o: ["Watt", "Joule", "Newton", "Volt"], a: 1},
+      {q: "Which form of energy is stored in a stretched spring?", o: ["Kinetic energy", "Thermal energy", "Elastic potential energy", "Chemical energy"], a: 2},
+      {q: "What happens to kinetic energy when an object's speed doubles?", o: ["Doubles", "Triples", "Quadruples", "Stays the same"], a: 2},
+      {q: "Which energy transformation occurs in a solar panel?", o: ["Chemical to electrical", "Light to electrical", "Thermal to kinetic", "Nuclear to thermal"], a: 1},
+      {q: "What is the law of conservation of energy?", o: ["Energy can be created", "Energy can be destroyed", "Energy cannot be created or destroyed", "Energy always increases"], a: 2},
+      {q: "Which type of energy does a moving car possess?", o: ["Potential energy", "Kinetic energy", "Chemical energy", "Nuclear energy"], a: 1},
+      {q: "What energy transformation occurs when you eat food?", o: ["Chemical to thermal and kinetic", "Kinetic to potential", "Electrical to chemical", "Nuclear to thermal"], a: 0},
+      {q: "Which factor does NOT affect gravitational potential energy?", o: ["Mass", "Height", "Gravity", "Speed"], a: 3},
+      {q: "What is thermal energy?", o: ["Energy of motion", "Energy due to temperature", "Energy stored in bonds", "Energy of position"], a: 1},
+      {q: "Which energy source is renewable?", o: ["Coal", "Natural gas", "Solar", "Uranium"], a: 2},
+      
+      // Wave Questions (20)
+      {q: "What is the distance between two consecutive crests called?", o: ["Amplitude", "Frequency", "Wavelength", "Period"], a: 2},
+      {q: "What is the maximum displacement from equilibrium called?", o: ["Wavelength", "Frequency", "Amplitude", "Period"], a: 2},
+      {q: "Which type of wave requires a medium to travel?", o: ["Light waves", "Radio waves", "Sound waves", "X-rays"], a: 2},
+      {q: "What is the unit for frequency?", o: ["Metres", "Seconds", "Hertz", "Joules"], a: 2},
+      {q: "What happens when a wave hits a barrier and bounces back?", o: ["Refraction", "Diffraction", "Reflection", "Interference"], a: 2},
+      {q: "Which electromagnetic wave has the longest wavelength?", o: ["Gamma rays", "X-rays", "Radio waves", "Ultraviolet"], a: 2},
+      {q: "What is the relationship between frequency and wavelength?", o: ["Directly proportional", "Inversely proportional", "No relationship", "Exponentially related"], a: 1},
+      {q: "What causes refraction of light?", o: ["Change in medium", "Hitting a mirror", "Passing through a slit", "Wave interference"], a: 0},
+      {q: "Which wave property determines the pitch of sound?", o: ["Amplitude", "Wavelength", "Frequency", "Speed"], a: 2},
+      {q: "What is the speed of light in a vacuum?", o: ["3 × 10⁶ m/s", "3 × 10⁸ m/s", "3 × 10¹⁰ m/s", "3 × 10¹² m/s"], a: 1},
+      {q: "Which wave behaviour occurs when waves pass through a narrow gap?", o: ["Reflection", "Refraction", "Diffraction", "Absorption"], a: 2},
+      {q: "What type of wave is sound?", o: ["Transverse", "Longitudinal", "Electromagnetic", "Standing"], a: 1},
+      {q: "Which colour of visible light has the highest frequency?", o: ["Red", "Green", "Blue", "Violet"], a: 3},
+      {q: "What is the period of a wave?", o: ["Distance between crests", "Maximum displacement", "Time for one complete cycle", "Number of cycles per second"], a: 2},
+      {q: "Which electromagnetic wave is used in medical imaging?", o: ["Radio waves", "Microwaves", "X-rays", "Infrared"], a: 2},
+      {q: "What happens when two waves meet and combine?", o: ["Reflection", "Refraction", "Interference", "Diffraction"], a: 2},
+      {q: "Which wave has the highest energy in the electromagnetic spectrum?", o: ["Radio waves", "Visible light", "X-rays", "Gamma rays"], a: 3},
+      {q: "What is the Doppler effect?", o: ["Bending of waves", "Change in frequency due to motion", "Wave interference", "Wave reflection"], a: 1},
+      {q: "Which medium allows sound to travel fastest?", o: ["Air", "Water", "Steel", "Vacuum"], a: 2},
+      {q: "What determines the loudness of sound?", o: ["Frequency", "Wavelength", "Amplitude", "Speed"], a: 2}
+    ];
+
+    function drawBackground() {
+      ctx.fillStyle = '#2a2a3e';
+      ctx.fillRect(0, 0, 800, 600);
+
+      for (let y = 0; y < 600; y += 64) {
+        for (let x = 0; x < 800; x += 64) {
+          ctx.fillStyle = ((x/64 + y/64) % 2 === 0) ? '#3a3a52' : '#2f2f45';
+          ctx.fillRect(x, y, 64, 64);
+          ctx.fillStyle = '#1a1a28';
+          ctx.fillRect(x, y, 64, 2);
+          ctx.fillRect(x, y, 2, 64);
+        }
+      }
+
+      ctx.strokeStyle = '#1a1a28';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(150, 100); ctx.lineTo(180, 140); ctx.lineTo(200, 160); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(400, 300); ctx.lineTo(450, 320); ctx.lineTo(480, 340); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(600, 200); ctx.lineTo(630, 230); ctx.lineTo(650, 250); ctx.stroke();
+
+      ctx.fillStyle = '#d4d4c8';
+      ctx.fillRect(100, 450, 20, 20);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(105, 455, 4, 4);
+      ctx.fillRect(111, 455, 4, 4);
+      ctx.fillRect(107, 463, 6, 3);
+
+      ctx.fillStyle = '#d4d4c8';
+      ctx.fillRect(700, 100, 20, 20);
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(705, 105, 4, 4);
+      ctx.fillRect(711, 105, 4, 4);
+      ctx.fillRect(707, 113, 6, 3);
+
+      ctx.fillStyle = '#4a4a5a';
+      ctx.fillRect(50, 50, 30, 80);
+      ctx.fillStyle = '#3a3a4a';
+      ctx.fillRect(52, 52, 26, 76);
+      ctx.fillStyle = '#2a2a3a';
+      ctx.fillRect(55, 55, 20, 10);
+
+      ctx.fillStyle = '#4a4a5a';
+      ctx.fillRect(720, 480, 30, 90);
+      ctx.fillStyle = '#3a3a4a';
+      ctx.fillRect(722, 482, 26, 86);
+      ctx.fillStyle = '#2a2a3a';
+      ctx.fillRect(725, 485, 20, 10);
+
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(660, 520, 25, 40);
+      ctx.fillRect(655, 530, 35, 30);
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(665, 525, 15, 10);
+
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(120, 200, 25, 40);
+      ctx.fillRect(115, 210, 35, 30);
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(125, 205, 15, 10);
+
+      ctx.fillStyle = '#d4d4c8';
+      ctx.fillRect(250, 500, 15, 3);
+      ctx.fillRect(500, 150, 15, 3);
+      ctx.fillRect(300, 80, 3, 15);
+      ctx.fillRect(550, 450, 3, 15);
+
+      ctx.fillStyle = '#1a1a28';
+      ctx.fillRect(0, 0, 800, 30);
+      ctx.fillRect(0, 570, 800, 30);
+      ctx.fillRect(0, 0, 30, 600);
+      ctx.fillRect(770, 0, 30, 600);
+
+      ctx.fillStyle = '#252535';
+      for (let i = 0; i < 800; i += 40) { ctx.fillRect(i, 5, 38, 20); ctx.fillRect(i + 20, 575, 38, 20); }
+      for (let i = 0; i < 600; i += 40) { ctx.fillRect(5, i, 20, 38); ctx.fillRect(775, i + 20, 20, 38); }
+    }
+
+    function drawPlayer() {
+      const breathe = Math.sin(game.frame * 0.03) * 1.5;
+      const armSwing = Math.sin(game.frame * 0.05) * 4;
+      const headBob = Math.sin(game.frame * 0.04) * 0.8;
+      const capeFlow = Math.sin(game.frame * 0.06) * 3;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(player.x - 22, player.y + 15, 44, 8);
+
+      ctx.fillStyle = '#8b0000';
+      ctx.fillRect(player.x - 20 + capeFlow, player.y - 20 + breathe, 40, 38);
+      ctx.fillStyle = '#6a0000';
+      ctx.fillRect(player.x - 18 + capeFlow, player.y - 18 + breathe, 36, 34);
+
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(player.x - 18, player.y - 17 + breathe, 36, 34);
+
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(player.x - 14, player.y - 15 + breathe, 28, 8);
+      ctx.fillRect(player.x - 14, player.y - 5 + breathe, 28, 8);
+
+      ctx.fillStyle = '#c0392b';
+      ctx.fillRect(player.x - 20, player.y - 3 + breathe, 40, 7);
+      ctx.fillStyle = '#e74c3c';
+      ctx.fillRect(player.x - 20, player.y - 2 + breathe, 40, 3);
+
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(player.x - 24, player.y - 8 + breathe + armSwing, 10, 16);
+      ctx.fillRect(player.x + 14, player.y - 8 + breathe - armSwing, 10, 16);
+
+      ctx.fillStyle = '#2c2c2c';
+      ctx.fillRect(player.x - 23, player.y - 6 + breathe + armSwing, 8, 4);
+      ctx.fillRect(player.x + 15, player.y - 6 + breathe - armSwing, 8, 4);
+
+      ctx.fillStyle = '#d4a574';
+      ctx.fillRect(player.x - 24, player.y + 7 + breathe + armSwing, 8, 7);
+      ctx.fillRect(player.x + 16, player.y + 7 + breathe - armSwing, 8, 7);
+
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(player.x - 12, player.y + 15, 10, 6);
+      ctx.fillRect(player.x + 2, player.y + 15, 10, 6);
+
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(player.x - 16, player.y - 26 + breathe + headBob, 32, 20);
+
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(player.x - 16, player.y - 26 + breathe + headBob, 32, 6);
+
+      ctx.fillStyle = '#050505';
+      ctx.fillRect(player.x - 14, player.y - 16 + breathe + headBob, 28, 10);
+
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(player.x - 10, player.y - 18 + breathe + headBob, 6, 5);
+      ctx.fillRect(player.x + 4, player.y - 18 + breathe + headBob, 6, 5);
+
+      ctx.fillStyle = 'rgba(255, 0, 0, 0.5)';
+      ctx.fillRect(player.x - 11, player.y - 19 + breathe + headBob, 8, 7);
+      ctx.fillRect(player.x + 3, player.y - 19 + breathe + headBob, 8, 7);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(player.x - 8, player.y - 17 + breathe + headBob, 2, 3);
+      ctx.fillRect(player.x + 6, player.y - 17 + breathe + headBob, 2, 3);
+
+      ctx.fillStyle = '#2c3e50';
+      ctx.fillRect(player.x - 15, player.y - 21 + breathe + headBob, 30, 4);
+      ctx.fillStyle = '#34495e';
+      ctx.fillRect(player.x - 2, player.y - 21 + breathe + headBob, 4, 4);
+    }
+
+    function drawEnemy(e) {
+      // Draw glow effect if enemy is smoke buffed
+      if (e.smokeBuffed) {
+        const pulse = Math.sin(game.frame * 0.1) * 0.3 + 0.7;
+        ctx.globalAlpha = pulse * 0.4;
+        ctx.fillStyle = '#ffeb3b';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, 35, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      
+      if (e.type === 'bat') drawBat(e);
+      else if (e.type === 'ghost') drawGhost(e);
+      else if (e.type === 'eye') drawEye(e);
+      else if (e.type === 'archer') drawArcher(e);
+      else if (e.type === 'golem') drawGolem(e);
+      else if (e.type === 'tree_golem') drawTreeGolem(e);
+      else if (e.type === 'smoke_golem') drawSmokeGolem(e);
+      else if (e.type === 'fire_golem') drawFireGolem(e);
+      else drawSlime(e);
+    }
+
+    function drawSlime(e) {
+      const bounce = Math.abs(Math.sin(e.anim * 0.05)) * 6;
+      const squish = Math.sin(e.anim * 0.05) * 0.2 + 1;
+      const wobble = Math.sin(e.anim * 0.03) * 2;
+
+      if (e.maxHp > 1) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(e.x - 20, e.y - 35, 40, 4);
+        ctx.fillStyle = e.hp / e.maxHp > 0.5 ? '#2ecc71' : '#e74c3c';
+        ctx.fillRect(e.x - 20, e.y - 35, 40 * (e.hp / e.maxHp), 4);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(e.x - 18, e.y + 8, 36, 6);
+
+      const bodyWidth = 44 * squish;
+      const bodyHeight = 10 / squish;
+      
+      // Metal colors if metal variant
+      const darkColor = e.metal ? '#6b7280' : '#27ae60';
+      const mainColor = e.metal ? '#9ca3af' : '#2ecc71';
+      const lightColor = e.metal ? '#d1d5db' : '#34eb77';
+      
+      ctx.fillStyle = darkColor;
+      ctx.fillRect(e.x - bodyWidth/2 + wobble, e.y - 9 - bounce, bodyWidth, bodyHeight);
+
+      const mainWidth = 36 * squish;
+      const mainHeight = 20 / squish;
+      ctx.fillStyle = mainColor;
+      ctx.fillRect(e.x - mainWidth/2 + wobble, e.y - 16 - bounce, mainWidth, mainHeight);
+
+      ctx.fillStyle = lightColor;
+      ctx.fillRect(e.x - mainWidth/2 + 3 + wobble, e.y - 14 - bounce, mainWidth - 6, 3);
+
+      // Single large eye in center
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 8 + wobble, e.y - 10 - bounce, 16, 12);
+
+      // Calculate pupil position based on player direction
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const distance = Math.hypot(dx, dy);
+      const maxOffset = 3; // How far the pupil can move from center
+      
+      let pupilOffsetX = 0;
+      let pupilOffsetY = 0;
+      if (distance > 0) {
+        pupilOffsetX = (dx / distance) * maxOffset;
+        pupilOffsetY = (dy / distance) * maxOffset;
+      }
+
+      // Black pupil that follows player
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 3 + wobble + pupilOffsetX, e.y - 7 - bounce + pupilOffsetY, 6, 6);
+
+      // Small white highlight
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 1 + wobble + pupilOffsetX, e.y - 6 - bounce + pupilOffsetY, 2, 2);
+    }
+
+    function drawBat(e) {
+      const flap = Math.sin(e.anim * 0.3) * 8;
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(e.x - 12, e.y + 12, 24, 4);
+      
+      const bodyColor = e.metal ? '#6b7280' : '#1a1a1a';
+      const headColor = e.metal ? '#9ca3af' : '#2a2a2a';
+      const earColor = e.metal ? '#6b7280' : '#1a1a1a';
+      const wingColor = e.metal ? '#4b5563' : '#0a0a0a';
+      
+      ctx.fillStyle = bodyColor;
+      ctx.fillRect(e.x - 8, e.y - 10, 16, 18);
+      ctx.fillStyle = headColor;
+      ctx.fillRect(e.x - 10, e.y - 18, 20, 12);
+      ctx.fillStyle = earColor;
+      ctx.fillRect(e.x - 12, e.y - 20, 6, 8);
+      ctx.fillRect(e.x + 6, e.y - 20, 6, 8);
+      ctx.fillStyle = wingColor;
+      ctx.fillRect(e.x - 24, e.y - 5 - flap, 12, 18);
+      ctx.fillRect(e.x + 12, e.y - 5 - flap, 12, 18);
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(e.x - 6, e.y - 14, 4, 4);
+      ctx.fillRect(e.x + 2, e.y - 14, 4, 4);
+    }
+
+    function drawGhost(e) {
+      const float = Math.sin(e.anim * 0.04) * 4;
+      const fade = Math.sin(e.anim * 0.02) * 0.3 + 0.7;
+
+      if (e.maxHp > 1) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(e.x - 20, e.y - 35, 40, 4);
+        ctx.fillStyle = e.hp / e.maxHp > 0.5 ? '#2ecc71' : '#e74c3c';
+        ctx.fillRect(e.x - 20, e.y - 35, 40 * (e.hp / e.maxHp), 4);
+      }
+
+      const ghostColor = e.metal ? '#9ca3af' : '#e8e8ff';
+      
+      ctx.globalAlpha = fade;
+      ctx.fillStyle = ghostColor;
+      ctx.fillRect(e.x - 16, e.y - 20 + float, 32, 28);
+      ctx.fillRect(e.x - 16, e.y + 8 + float, 8, 6);
+      ctx.fillRect(e.x - 4, e.y + 8 + float, 8, 6);
+      ctx.fillRect(e.x + 8, e.y + 8 + float, 8, 6);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 10, e.y - 10 + float, 6, 8);
+      ctx.fillRect(e.x + 4, e.y - 10 + float, 6, 8);
+      ctx.globalAlpha = 1;
+    }
+
+    function drawEye(e) {
+      const pulse = Math.sin(e.anim * 0.08) * 3;
+
+      if (e.maxHp > 1) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(e.x - 20, e.y - 40, 40, 4);
+        ctx.fillStyle = e.hp / e.maxHp > 0.5 ? '#2ecc71' : '#e74c3c';
+        ctx.fillRect(e.x - 20, e.y - 40, 40 * (e.hp / e.maxHp), 4);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(e.x - 18, e.y + 12, 36, 6);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 20 - pulse, e.y - 20, 40 + pulse * 2, 36);
+      
+      const irisColor = e.metal ? '#6b7280' : '#8b00ff';
+      ctx.fillStyle = irisColor;
+      ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 6, e.y - 6, 12, 12);
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 3, e.y - 3, 4, 4);
+    }
+
+    function drawArcher(e) {
+      const breathe = Math.sin(e.anim * 0.03) * 1;
+      const armSwing = Math.sin(e.anim * 0.04) * 3;
+
+      if (e.maxHp > 1) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(e.x - 20, e.y - 35, 40, 4);
+        ctx.fillStyle = e.hp / e.maxHp > 0.5 ? '#2ecc71' : '#e74c3c';
+        ctx.fillRect(e.x - 20, e.y - 35, 40 * (e.hp / e.maxHp), 4);
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(e.x - 16, e.y + 12, 32, 6);
+
+      const boneColor = e.metal ? '#9ca3af' : '#f8f8f0';
+      const ribColor = e.metal ? '#6b7280' : '#e8e8d8';
+      
+      ctx.fillStyle = boneColor;
+      ctx.fillRect(e.x - 10, e.y - 24 + breathe, 20, 16);
+      ctx.fillRect(e.x - 8, e.y - 26 + breathe, 16, 2);
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 8, e.y - 20 + breathe, 5, 5);
+      ctx.fillRect(e.x + 3, e.y - 20 + breathe, 5, 5);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 7, e.y - 19 + breathe, 3, 3);
+      ctx.fillRect(e.x + 4, e.y - 19 + breathe, 3, 3);
+      
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 6, e.y - 18 + breathe, 1, 1);
+      ctx.fillRect(e.x + 5, e.y - 18 + breathe, 1, 1);
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 1, e.y - 15 + breathe, 2, 3);
+
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(e.x - 4, e.y - 12 + breathe, 8, 2);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 3, e.y - 12 + breathe, 1, 2);
+      ctx.fillRect(e.x - 1, e.y - 12 + breathe, 1, 2);
+      ctx.fillRect(e.x + 1, e.y - 12 + breathe, 1, 2);
+
+      ctx.fillStyle = boneColor;
+      ctx.fillRect(e.x - 2, e.y - 8 + breathe, 4, 6);
+
+      ctx.fillStyle = boneColor;
+      ctx.fillRect(e.x - 12, e.y - 6 + breathe, 24, 16);
+      
+      ctx.fillStyle = ribColor;
+      ctx.fillRect(e.x - 10, e.y - 4 + breathe, 20, 1);
+      ctx.fillRect(e.x - 10, e.y - 1 + breathe, 20, 1);
+      ctx.fillRect(e.x - 10, e.y + 2 + breathe, 20, 1);
+      ctx.fillRect(e.x - 10, e.y + 5 + breathe, 20, 1);
+
+      ctx.fillStyle = boneColor;
+      ctx.fillRect(e.x - 18, e.y - 6 + breathe - armSwing, 6, 12);
+      ctx.fillRect(e.x + 12, e.y - 6 + breathe + armSwing, 6, 12);
+
+      ctx.fillStyle = boneColor;
+      ctx.fillRect(e.x - 8, e.y + 10 + breathe, 4, 12);
+      ctx.fillRect(e.x + 4, e.y + 10 + breathe, 4, 12);
+
+      ctx.save();
+      ctx.translate(e.x - 15, e.y - 2 + breathe - armSwing);
+      ctx.rotate(-0.2 + armSwing * 0.02);
+      
+      ctx.fillStyle = '#654321';
+      ctx.fillRect(-2, -12, 4, 24);
+      
+      ctx.fillStyle = '#8b7355';
+      const stringStretch = armSwing * 0.5;
+      ctx.fillRect(2, -10, 1 + stringStretch, 20);
+      
+      if (armSwing > 1) {
+        ctx.fillStyle = '#8b4513';
+        ctx.fillRect(3 + stringStretch, -1, 8, 2);
+        ctx.fillStyle = '#c0c0c0';
+        ctx.fillRect(11 + stringStretch, -2, 3, 4);
+      }
+      
+      ctx.restore();
+    }
+
+    function drawGolem(e) {
+      const breathe = Math.sin(e.anim * 0.02) * 1;
+      const rumble = Math.sin(e.anim * 0.15) * 0.5;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
+
+      // Main body - large and imposing
+      ctx.fillStyle = '#5d4e37'; // Dark mud brown
+      ctx.fillRect(e.x - 20 + rumble, e.y - 20 + breathe, 40, 38);
+
+      // Lighter mud texture
+      ctx.fillStyle = '#7d6e47';
+      ctx.fillRect(e.x - 18 + rumble, e.y - 18 + breathe, 36, 34);
+
+      // Mud drips
+      ctx.fillStyle = '#4d3e27';
+      ctx.fillRect(e.x - 15 + rumble, e.y + 18 + breathe, 8, 6);
+      ctx.fillRect(e.x + 7 + rumble, e.y + 18 + breathe, 8, 6);
+      ctx.fillRect(e.x - 2 + rumble, e.y + 18 + breathe, 4, 8);
+
+      // Rock chunks embedded in mud
+      ctx.fillStyle = '#6b6b6b';
+      ctx.fillRect(e.x - 12 + rumble, e.y - 10 + breathe, 6, 6);
+      ctx.fillRect(e.x + 6 + rumble, e.y - 14 + breathe, 5, 5);
+      ctx.fillRect(e.x - 8 + rumble, e.y + 4 + breathe, 4, 4);
+
+      // Glowing core (vulnerable to shadow magic)
+      const pulseSize = 2 + Math.sin(e.anim * 0.1) * 1;
+      ctx.fillStyle = '#8b4789'; // Purple glow
+      ctx.fillRect(e.x - pulseSize + rumble, e.y - 2 + breathe, pulseSize * 2, pulseSize * 2);
+
+      // Eyes - menacing
+      ctx.fillStyle = '#ff6b35';
+      ctx.fillRect(e.x - 10 + rumble, e.y - 12 + breathe, 6, 8);
+      ctx.fillRect(e.x + 4 + rumble, e.y - 12 + breathe, 6, 8);
+
+      // Darker pupils
+      ctx.fillStyle = '#1a1a1a';
+      ctx.fillRect(e.x - 8 + rumble, e.y - 10 + breathe, 2, 4);
+      ctx.fillRect(e.x + 6 + rumble, e.y - 10 + breathe, 2, 4);
+
+      // Arms - thick and heavy
+      ctx.fillStyle = '#5d4e37';
+      ctx.fillRect(e.x - 28 + rumble, e.y - 8 + breathe, 8, 18);
+      ctx.fillRect(e.x + 20 + rumble, e.y - 8 + breathe, 8, 18);
+
+      // Hands
+      ctx.fillStyle = '#4d3e27';
+      ctx.fillRect(e.x - 30 + rumble, e.y + 10 + breathe, 10, 8);
+      ctx.fillRect(e.x + 20 + rumble, e.y + 10 + breathe, 10, 8);
+
+      // Legs - stumpy
+      ctx.fillStyle = '#5d4e37';
+      ctx.fillRect(e.x - 12 + rumble, e.y + 18 + breathe, 8, 10);
+      ctx.fillRect(e.x + 4 + rumble, e.y + 18 + breathe, 8, 10);
+    }
+
+    function drawTreeGolem(e) {
+      const breathe = Math.sin(e.anim * 0.02) * 1;
+      const sway = Math.sin(e.anim * 0.04) * 2;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
+
+      // Trunk - main body
+      ctx.fillStyle = '#3e2723'; // Dark brown trunk
+      ctx.fillRect(e.x - 18 + sway, e.y - 18 + breathe, 36, 36);
+
+      // Wood texture
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(e.x - 16 + sway, e.y - 16 + breathe, 32, 32);
+
+      // Wood rings
+      ctx.fillStyle = '#4e342e';
+      ctx.fillRect(e.x - 8 + sway, e.y - 10 + breathe, 16, 3);
+      ctx.fillRect(e.x - 10 + sway, e.y + breathe, 20, 3);
+      ctx.fillRect(e.x - 6 + sway, e.y + 8 + breathe, 12, 3);
+
+      // Glowing core (vulnerable to darts)
+      const pulseSize = 2 + Math.sin(e.anim * 0.1) * 1;
+      ctx.fillStyle = '#8bc34a'; // Green nature glow
+      ctx.fillRect(e.x - pulseSize + sway, e.y - 2 + breathe, pulseSize * 2, pulseSize * 2);
+
+      // Eyes - wooden knots
+      ctx.fillStyle = '#1b5e20';
+      ctx.fillRect(e.x - 10 + sway, e.y - 12 + breathe, 6, 8);
+      ctx.fillRect(e.x + 4 + sway, e.y - 12 + breathe, 6, 8);
+
+      // Branch arms
+      ctx.fillStyle = '#3e2723';
+      ctx.fillRect(e.x - 26 + sway, e.y - 8 + breathe, 8, 16);
+      ctx.fillRect(e.x + 18 + sway, e.y - 8 + breathe, 8, 16);
+
+      // Leaves at end of branches
+      ctx.fillStyle = '#4caf50';
+      ctx.fillRect(e.x - 30 + sway, e.y - 6 + breathe, 8, 8);
+      ctx.fillRect(e.x + 22 + sway, e.y - 6 + breathe, 8, 8);
+
+      // Root legs
+      ctx.fillStyle = '#3e2723';
+      ctx.fillRect(e.x - 14 + sway, e.y + 18 + breathe, 10, 10);
+      ctx.fillRect(e.x + 4 + sway, e.y + 18 + breathe, 10, 10);
+    }
+
+    function drawSmokeGolem(e) {
+      const breathe = Math.sin(e.anim * 0.02) * 1;
+      const float = Math.sin(e.anim * 0.04) * 3;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
+
+      // Smoke body - ethereal
+      const alpha = 0.7 + Math.sin(e.anim * 0.05) * 0.2;
+      ctx.globalAlpha = alpha;
+
+      ctx.fillStyle = '#616161'; // Dark gray smoke
+      ctx.fillRect(e.x - 20, e.y - 20 + breathe + float, 40, 38);
+
+      ctx.fillStyle = '#9e9e9e'; // Lighter smoke
+      ctx.fillRect(e.x - 18, e.y - 18 + breathe + float, 36, 34);
+
+      // Smoke wisps
+      ctx.fillStyle = '#757575';
+      ctx.fillRect(e.x - 22, e.y - 15 + breathe + float, 8, 20);
+      ctx.fillRect(e.x + 14, e.y - 15 + breathe + float, 8, 20);
+      ctx.fillRect(e.x - 4, e.y + 18 + breathe + float, 8, 12);
+
+      // Glowing core (vulnerable to smoke bomb)
+      const pulseSize = 2 + Math.sin(e.anim * 0.1) * 1;
+      ctx.fillStyle = '#bdbdbd'; // Light gray glow
+      ctx.fillRect(e.x - pulseSize, e.y - 2 + breathe + float, pulseSize * 2, pulseSize * 2);
+
+      // Eyes - glowing through smoke
+      ctx.fillStyle = '#ffeb3b';
+      ctx.fillRect(e.x - 10, e.y - 12 + breathe + float, 6, 8);
+      ctx.fillRect(e.x + 4, e.y - 12 + breathe + float, 6, 8);
+
+      ctx.globalAlpha = 1;
+    }
+
+    function drawFireGolem(e) {
+      const breathe = Math.sin(e.anim * 0.02) * 1;
+      const flicker = Math.sin(e.anim * 0.2) * 1.5;
+
+      let scale = 1;
+      if (e.size === 'half') scale = 0.7;
+      else if (e.size === 'quarter') scale = 0.4;
+
+      const width = 40 * scale;
+      const height = 38 * scale;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(e.x - 24 * scale, e.y + 18 * scale, 48 * scale, 8 * scale);
+
+      // Fire body - animated
+      ctx.fillStyle = '#b71c1c'; // Dark red core
+      ctx.fillRect(e.x - width/2 + flicker, e.y - height/2 + breathe, width, height);
+
+      ctx.fillStyle = '#d32f2f'; // Red
+      ctx.fillRect(e.x - width/2 + 2 * scale + flicker, e.y - height/2 + 2 * scale + breathe, width - 4 * scale, height - 4 * scale);
+
+      ctx.fillStyle = '#f44336'; // Bright red
+      ctx.fillRect(e.x - width/2 + 4 * scale + flicker, e.y - height/2 + 4 * scale + breathe, width - 8 * scale, height - 8 * scale);
+
+      // Flame tips
+      ctx.fillStyle = '#ff9800'; // Orange
+      ctx.fillRect(e.x - 8 * scale + flicker, e.y - height/2 - 4 * scale + breathe, 4 * scale, 6 * scale);
+      ctx.fillRect(e.x + flicker, e.y - height/2 - 5 * scale + breathe, 4 * scale, 7 * scale);
+      ctx.fillRect(e.x + 4 * scale + flicker, e.y - height/2 - 3 * scale + breathe, 4 * scale, 5 * scale);
+
+      // Eyes - burning
+      ctx.fillStyle = '#ffeb3b';
+      ctx.fillRect(e.x - 10 * scale + flicker, e.y - 12 * scale + breathe, 6 * scale, 8 * scale);
+      ctx.fillRect(e.x + 4 * scale + flicker, e.y - 12 * scale + breathe, 6 * scale, 8 * scale);
+
+      // White hot pupils
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(e.x - 8 * scale + flicker, e.y - 10 * scale + breathe, 2 * scale, 4 * scale);
+      ctx.fillRect(e.x + 6 * scale + flicker, e.y - 10 * scale + breathe, 2 * scale, 4 * scale);
+    }
+
+    // SHURIKEN projectile rendering
+    function drawBullet(b) {
+      ctx.save();
+      ctx.translate(b.x, b.y);
+      ctx.rotate(b.rot);
+      ctx.fillStyle = '#c0c0c0';
+      ctx.beginPath();
+      ctx.moveTo(0, -12);
+      ctx.lineTo(3, -4);
+      ctx.lineTo(12, 0);
+      ctx.lineTo(3, 4);
+      ctx.lineTo(0, 12);
+      ctx.lineTo(-3, 4);
+      ctx.lineTo(-12, 0);
+      ctx.lineTo(-3, -4);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(0, 0, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawEnemyArrow(a) {
+      ctx.save();
+      ctx.translate(a.x, a.y);
+      ctx.rotate(a.rot);
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(-16, -2, 20, 4);
+      ctx.fillStyle = '#c0c0c0';
+      ctx.fillRect(4, -4, 8, 8);
+      ctx.restore();
+    }
+
+    function drawShadowTrap(trap) {
+      const now = Date.now();
+      const timeSincePlaced = now - trap.placed;
+
+      if (!trap.activated) {
+        const alpha = Math.min(1, timeSincePlaced / 500);
+        ctx.globalAlpha = alpha;
+      } else {
+        const pulse = Math.sin(timeSincePlaced * 0.01) * 0.3 + 0.7;
+        ctx.globalAlpha = pulse;
+      }
+
+      ctx.fillStyle = '#2d0a30';
+      ctx.beginPath(); ctx.arc(trap.x, trap.y, 37.5, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#4a0e4e';
+      ctx.beginPath(); ctx.arc(trap.x, trap.y, 27, 0, Math.PI * 2); ctx.fill();
+
+      ctx.fillStyle = '#8b00ff';
+      ctx.beginPath(); ctx.arc(trap.x, trap.y, 12, 0, Math.PI * 2); ctx.fill();
+
+      ctx.globalAlpha = 1;
+    }
+
+    function drawDart(d) {
+      ctx.fillStyle = '#8b4513';
+      ctx.fillRect(d.x - 8, d.y - 2, 16, 4);
+      ctx.fillStyle = '#c0c0c0';
+      ctx.fillRect(d.x + 6, d.y - 3, 6, 6);
+    }
+
+    function drawParticle(p) {
+      const life = (Date.now() - p.start) / p.life;
+      ctx.globalAlpha = 1 - life;
+
+      if (p.text) {
+        ctx.font = `bold ${p.fontSize}px 'Courier New', monospace`;
+        ctx.fillStyle = p.color;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(p.text, p.x, p.y);
+      } else {
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x - p.size / 2, p.y - p.size / 2, p.size, p.size);
+      }
+
+      ctx.globalAlpha = 1;
+    }
+
+    function showLevelUpText() {
+      particles.push({ x: 400, y: 200, vx: 0, vy: -1, size: 0, color: '#00d4ff', start: Date.now(), life: 2000, text: 'LEVEL UP!', fontSize: 48 });
+      clampParticles();
+    }
+
+    // Spawning
+    function spawnEnemy() {
+      const side = Math.floor(Math.random() * 4);
+      let x, y;
+      if (side === 0) { x = Math.random() * 800; y = -20; }
+      else if (side === 1) { x = 820; y = Math.random() * 600; }
+      else if (side === 2) { x = Math.random() * 800; y = 620; }
+      else { x = -20; y = Math.random() * 600; }
+
+      const rand = Math.random();
+      const baseHp = Math.floor(player.level / 3) + 1;
+      const speedMultiplier = Math.pow(0.75, progress.runNumber - 1);
+
+      // Metal variant chance: 1% base + 1% per death (max 10%)
+      const metalChance = Math.min(0.01 + (progress.deaths * 0.01), 0.10);
+      const isMetal = Math.random() < metalChance;
+
+      // Golem spawn chance: 1% per player level (max 10%)
+      const golemChance = Math.min(player.level * 0.01, 0.10);
+      if (Math.random() < golemChance) {
+        // Choose random golem type - 25% chance each
+        const golemRoll = Math.random();
+        if (golemRoll < 0.25) {
+          enemies.push({ id: nextEnemyId++, type: 'golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, lastAbility: Date.now() });
+        } else if (golemRoll < 0.50) {
+          enemies.push({ id: nextEnemyId++, type: 'tree_golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, lastAbility: Date.now(), roots: [] });
+        } else if (golemRoll < 0.75) {
+          enemies.push({ id: nextEnemyId++, type: 'smoke_golem', x, y, speed: 0.2, hp: 1, maxHp: 1, anim: Math.random() * 100, sineOffset: 0, smokeTrail: [] });
+        } else {
+          enemies.push({ id: nextEnemyId++, type: 'fire_golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, size: 'full' });
+        }
+        return;
+      }
+
+      const id = nextEnemyId++;
+
+      if (rand < 0.10) {
+        const groupSize = progress.runNumber + 1;
+        for (let i = 0; i < groupSize; i++) {
+          const batMetal = Math.random() < metalChance;
+          enemies.push({ id: nextEnemyId++, type: 'bat', x: x + (Math.random() - 0.5) * 60, y: y + (Math.random() - 0.5) * 60, speed: 0.8 * speedMultiplier, hp: 1, maxHp: 1, anim: Math.random() * 100, metal: batMetal });
+        }
+      } else if (rand < 0.20) {
+        enemies.push({ id, type: 'ghost', x, y, speed: 0.2 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, sineOffset: 0, metal: isMetal });
+      } else if (rand < 0.25) {
+        const eyeHp = baseHp * 2;
+        enemies.push({ id, type: 'eye', x, y, speed: 0.2 * speedMultiplier, hp: eyeHp, maxHp: eyeHp, anim: Math.random() * 100, lastWarp: Date.now(), metal: isMetal });
+      } else if (rand < 0.35) {
+        enemies.push({ id, type: 'archer', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, lastShot: 0, metal: isMetal });
+      } else {
+        enemies.push({ id, type: 'slime', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, metal: isMetal });
+      }
+    }
+
+    function maintainEnemies() {
+      const target = Math.max(1, player.level + 1);
+      if (enemies.length < target && (game.frame % 5 === 0)) spawnEnemy();
+    }
+
+    // Shooting
+    function shoot() {
+      const now = Date.now();
+      const dynamicCooldown = Math.min(upgrades.cooldown * 1.2, upgrades.cooldown + 120);
+      if (now - lastShoot < dynamicCooldown) return;
+      lastShoot = now;
+
+      const v = norm(targetX - player.x, targetY - player.y);
+      if (v.d === 0) return;
+      const speed = upgrades.projSpeed;
+
+      if (bullets.length < MAX_BULLETS) {
+        bullets.push({ x: player.x, y: player.y, vx: v.nx * speed, vy: v.ny * speed, rot: 0, ricochet: progress.ricochet, bounces: progress.wallBounce, hitIds: [] });
+      }
+      if (progress.reverseShot > 0 && bullets.length < MAX_BULLETS) {
+        bullets.push({ x: player.x, y: player.y, vx: -v.nx * speed, vy: -v.ny * speed, rot: 0, ricochet: progress.ricochet, bounces: progress.wallBounce, hitIds: [] });
+      }
+    }
+
+    function throwSmoke() {
+      const now = Date.now();
+      if (now - lastSmoke < upgrades.smokeCooldown) return;
+      if (enemies.length === 0) return;
+      lastSmoke = now;
+
+      // Priority shot: chance to target closest enemy
+      let target;
+      const priorityChance = progress.smokePriority * 0.05;
+      if (Math.random() < priorityChance) {
+        // Find closest enemy
+        let minDist = Infinity;
+        for (const e of enemies) {
+          if (e.dead) continue;
+          const dist = Math.hypot(e.x - player.x, e.y - player.y);
+          if (dist < minDist) {
+            minDist = dist;
+            target = e;
+          }
+        }
+      } else {
+        // Random target
+        target = enemies[Math.floor(Math.random() * enemies.length)];
+      }
+      
+      if (!target || target.dead) return;
+      
+      // Smoke golem defeated by smoke bomb
+      if (target.type === 'smoke_golem') {
+        markEnemyDead(target);
+        for (let i = 0; i < 24; i++) {
+          particles.push({ x: target.x + (Math.random() - 0.5) * 60, y: target.y + (Math.random() - 0.5) * 60, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3, size: Math.random() * 10 + 5, color: Math.random() > 0.5 ? '#616161' : '#9e9e9e', start: now, life: 1000 });
+        }
+        clampParticles();
+        
+        // Cluster shot on defeat
+        if (progress.smokeCluster > 0) {
+          for (let i = 0; i < progress.smokeCluster; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 25;
+            const clusterX = target.x + Math.cos(angle) * distance;
+            const clusterY = target.y + Math.sin(angle) * distance;
+            
+            // Find nearby enemy for cluster bomb
+            let nearestCluster = null;
+            let minDist = Infinity;
+            for (const e of enemies) {
+              if (e.dead || e === target) continue;
+              const dist = Math.hypot(e.x - clusterX, e.y - clusterY);
+              if (dist < minDist) {
+                minDist = dist;
+                nearestCluster = e;
+              }
+            }
+            
+            if (nearestCluster && minDist < 150) {
+              const clusterDamage = Math.ceil(upgrades.smokeDamage / 2);
+              nearestCluster.hp -= clusterDamage;
+              
+              // Cluster particles
+              for (let j = 0; j < 8; j++) {
+                particles.push({ x: nearestCluster.x + (Math.random() - 0.5) * 30, y: nearestCluster.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 5 + 3, color: Math.random() > 0.5 ? '#999' : '#bbb', start: now, life: 600 });
+              }
+              
+              if (nearestCluster.hp <= 0 && !nearestCluster.dead) {
+                markEnemyDead(nearestCluster);
+              }
+            }
+          }
+          clampParticles();
+        }
+        return;
+      }
+      
+      // Smoke doesn't work on other golems
+      if (target.type === 'golem' || target.type === 'tree_golem' || target.type === 'fire_golem') return;
+      
+      target.hp -= upgrades.smokeDamage;
+
+      for (let i = 0; i < 16; i++) {
+        particles.push({ x: target.x + (Math.random() - 0.5) * 40, y: target.y + (Math.random() - 0.5) * 40, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 8 + 4, color: Math.random() > 0.5 ? '#666' : '#888', start: now, life: 800 });
+      }
+      clampParticles();
+
+      if (target.hp <= 0 && !target.dead) {
+        // Cluster shot on defeat
+        if (progress.smokeCluster > 0) {
+          for (let i = 0; i < progress.smokeCluster; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 25;
+            const clusterX = target.x + Math.cos(angle) * distance;
+            const clusterY = target.y + Math.sin(angle) * distance;
+            
+            // Find nearby enemy for cluster bomb
+            let nearestCluster = null;
+            let minDist = Infinity;
+            for (const e of enemies) {
+              if (e.dead || e === target) continue;
+              const dist = Math.hypot(e.x - clusterX, e.y - clusterY);
+              if (dist < minDist) {
+                minDist = dist;
+                nearestCluster = e;
+              }
+            }
+            
+            if (nearestCluster && minDist < 150) {
+              const clusterDamage = Math.ceil(upgrades.smokeDamage / 2);
+              nearestCluster.hp -= clusterDamage;
+              
+              // Cluster particles
+              for (let j = 0; j < 8; j++) {
+                particles.push({ x: nearestCluster.x + (Math.random() - 0.5) * 30, y: nearestCluster.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 5 + 3, color: Math.random() > 0.5 ? '#999' : '#bbb', start: now, life: 600 });
+              }
+              
+              if (nearestCluster.hp <= 0 && !nearestCluster.dead) {
+                markEnemyDead(nearestCluster);
+              }
+            }
+          }
+          clampParticles();
+        }
+        
+        markEnemyDead(target);
+      }
+    }
+
+    function shootDart() {
+      const now = Date.now();
+      if (now - lastDart < upgrades.dartCooldown) return;
+      lastDart = now;
+
+      const directions = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+      if (upgrades.dartAmount > 4) {
+        directions.push({x:0.707,y:-0.707},{x:0.707,y:0.707},{x:-0.707,y:0.707},{x:-0.707,y:-0.707});
+      }
+
+      const shuffled = directions.sort(() => Math.random() - 0.5);
+      const numDarts = Math.min(upgrades.dartAmount, directions.length);
+      
+      for (let i=0;i<numDarts;i++){
+        if (darts.length >= MAX_DARTS) break;
+        const dir = shuffled[i];
+        
+        // Dart spread: fire multiple darts in tight cluster in same direction
+        const spreadCount = 1 + progress.dartSpread;
+        for (let s = 0; s < spreadCount; s++) {
+          if (darts.length >= MAX_DARTS) break;
+          
+          // Add small angle variation for spread
+          const spreadAngle = (s - (spreadCount - 1) / 2) * 0.15; // ±0.15 radians per dart
+          const baseAngle = Math.atan2(dir.y, dir.x);
+          const finalAngle = baseAngle + spreadAngle;
+          
+          darts.push({ 
+            x: player.x, 
+            y: player.y, 
+            vx: Math.cos(finalAngle) * 4, 
+            vy: Math.sin(finalAngle) * 4, 
+            startX: player.x, 
+            startY: player.y, 
+            maxRange: upgrades.dartRange,
+            hitIds: [] // Track which enemies this dart has hit (for shatter)
+          });
+        }
+      }
+    }
+
+    function findNearest(x, y, excludeIds) {
+      let nearest = null, minDist = Infinity;
+      for (const e of enemies) {
+        if (e.dead) continue;
+        if (excludeIds && excludeIds.includes(e.id)) continue;
+        const d = Math.hypot(e.x - x, e.y - y);
+        if (d < minDist) { minDist = d; nearest = e; }
+      }
+      return nearest;
+    }
+
+    // Mark-and-sweep enemy deletion to avoid mid-loop splice crashes
+    const deadQueue = [];
+    function markEnemyDead(e) {
+      if (e.dead) return;
+      e.dead = true;
+      deadQueue.push(e.id);
+      createDefeatParticles(e.x, e.y, e.type);
+      player.exp += 10;
+      player.kills++;
+      progress.runCoins++;
+    }
+    function sweepDeadEnemies() {
+      if (deadQueue.length === 0) return;
+      const deadSet = new Set(deadQueue);
+      deadQueue.length = 0;
+
+      // Remove dead enemies
+      enemies = enemies.filter(e => !deadSet.has(e.id));
+
+      // Clean bullet hitId lists to avoid growth
+      for (const b of bullets) {
+        b.hitIds = b.hitIds.filter(id => !deadSet.has(id));
+      }
+
+      updateUI();
+      checkLevelUp();
+      maintainEnemies();
+    }
+
+    function update() {
+      if (!game.active || game.paused) return;
+
+      try {
+        game.time += 16;
+        game.frame++;
+
+        maintainEnemies();
+        shoot();
+        if (upgrades.smokeUnlocked) throwSmoke();
+        if (upgrades.dartUnlocked) shootDart();
+
+        // Move bullets
+        for (let i = bullets.length - 1; i >= 0; i--) {
+          const b = bullets[i];
+          b.x += b.vx; b.y += b.vy;
+          b.rot += 0.35;
+
+          let bounced = false;
+          if (b.bounces > 0) {
+            if (b.x < 0 || b.x > 800) { b.vx *= -1; b.x = Math.max(0, Math.min(800, b.x)); b.bounces--; bounced = true; }
+            if (b.y < 0 || b.y > 600) { b.vy *= -1; b.y = Math.max(0, Math.min(600, b.y)); b.bounces--; bounced = true; }
+          }
+          if (!bounced && (b.x < -50 || b.x > 850 || b.y < -50 || b.y > 650)) bullets.splice(i, 1);
+        }
+
+        // Shadow traps
+        for (let i = shadowTraps.length - 1; i >= 0; i--) {
+          const trap = shadowTraps[i];
+          const now = Date.now();
+          
+          // Remove trap after 20 seconds
+          if (now - trap.placed >= 20000) {
+            // Fade out particles
+            for (let k = 0; k < 12; k++) {
+              const angle = Math.random() * Math.PI * 2;
+              const speed = Math.random() * 2;
+              particles.push({ x: trap.x, y: trap.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 4 + 2, color: '#2d0a30', start: now, life: 600 });
+            }
+            shadowTraps.splice(i, 1);
+            continue;
+          }
+          
+          if (!trap.activated && now - trap.placed >= 500) trap.activated = true;
+
+          if (trap.activated) {
+            // Utility trap: apply slow instead of damage
+            const isUtilityTrap = progress.shadowUtility > 0;
+            const slowEffect = isUtilityTrap ? (progress.shadowUtility * 0.05) : 0;
+            
+            let any = false;
+            let shouldExplode = false;
+            
+            for (const e of enemies) {
+              if (e.dead) continue;
+              const d = Math.hypot(e.x - trap.x, e.y - trap.y);
+              if (d < 45) {
+                // Golem is instantly defeated by shadow trap (even utility trap with 0 damage)
+                if (e.type === 'golem') {
+                  markEnemyDead(e);
+                  shouldExplode = true;
+                  any = true;
+                } else if (isUtilityTrap) {
+                  // Utility trap: apply slow and bonus damage per upgrade level
+                  e.speed *= (1 - slowEffect);
+                  // Bonus damage: enemies take +1 damage per utility level when hit while on trap
+                  e.hp -= progress.shadowUtility;
+                  shouldExplode = true;
+                } else {
+                  // Regular trap: damage
+                  e.hp -= upgrades.shadowDamage;
+                  shouldExplode = true;
+                  
+                  for (const other of enemies) {
+                    if (other === e || other.dead) continue;
+                    const od = Math.hypot(other.x - trap.x, other.y - trap.y);
+                    if (od < upgrades.shadowRadius * 1.1) {
+                      // Golem is defeated by any shadow trap explosion
+                      if (other.type === 'golem') {
+                        markEnemyDead(other);
+                      } else {
+                        other.hp -= Math.ceil(upgrades.shadowDamage / 2);
+                      }
+                    }
+                  }
+                }
+                any = true;
+              }
+            }
+            
+            if (shouldExplode) {
+              for (let k = 0; k < 24; k++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 3;
+                particles.push({ x: trap.x, y: trap.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 6 + 3, color: Math.random() > 0.5 ? '#4a0e4e' : '#2d0a30', start: now, life: 800 });
+              }
+              clampParticles();
+              
+              // Double trap: chance to respawn immediately
+              const doubleTrapChance = progress.shadowDouble * 0.05;
+              if (Math.random() < doubleTrapChance) {
+                shadowTraps[i] = { x: trap.x, y: trap.y, placed: now, activated: false };
+              } else {
+                shadowTraps.splice(i, 1);
+              }
+            }
+            
+            if (any) {
+              for (const e of enemies) if (!e.dead && e.hp <= 0) markEnemyDead(e);
+            }
+          }
+        }
+
+        // Apply smoke golem buffs
+        for (const e of enemies) {
+          if (e.dead) continue;
+          e.smokeBuffed = false; // Reset buff each frame
+          
+          // Check if enemy is in any smoke golem's trail
+          if (e.type !== 'smoke_golem') {
+            for (const sg of enemies) {
+              if (sg.dead || sg.type !== 'smoke_golem' || !sg.smokeTrail) continue;
+              for (const trail of sg.smokeTrail) {
+                const dist = Math.hypot(e.x - trail.x, e.y - trail.y);
+                if (dist < 30) {
+                  e.smokeBuffed = true;
+                  break;
+                }
+              }
+              if (e.smokeBuffed) break;
+            }
+          }
+        }
+        
+        // Enemies move + touch damage
+        for (const e of enemies) {
+          if (e.dead) continue;
+          e.anim += 0.08;
+
+          const v = norm(player.x - e.x, player.y - e.y);
+          
+          // Apply smoke buff to speed
+          let effectiveSpeed = e.speed;
+          if (e.smokeBuffed) {
+            effectiveSpeed *= 1.5;
+          }
+
+          if (e.type === 'ghost') {
+            e.sineOffset = (e.sineOffset || 0) + 0.025;
+            const perpX = v.d === 0 ? 0 : -v.ny;
+            const perpY = v.d === 0 ? 0 : v.nx;
+            const sineWave = Math.sin(e.sineOffset) * 35;
+            e.x += v.nx * effectiveSpeed + perpX * sineWave * 0.05;
+            e.y += v.ny * effectiveSpeed + perpY * sineWave * 0.05;
+          } else if (e.type === 'eye') {
+            const now = Date.now();
+            if (now - e.lastWarp > 3000) {
+              // Calculate current distance from player
+              const currentDist = Math.hypot(e.x - player.x, e.y - player.y);
+              
+              // Teleport to same distance in random direction
+              const angle = Math.random() * Math.PI * 2;
+              e.x = Math.max(50, Math.min(750, player.x + Math.cos(angle) * currentDist));
+              e.y = Math.max(50, Math.min(550, player.y + Math.sin(angle) * currentDist));
+              e.lastWarp = now;
+              for (let j = 0; j < 15; j++) {
+                particles.push({ x: e.x + (Math.random() - 0.5) * 40, y: e.y + (Math.random() - 0.5) * 40, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3, size: Math.random() * 6 + 3, color: '#8b00ff', start: now, life: 600 });
+              }
+              clampParticles();
+            }
+            e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed;
+          } else if (e.type === 'archer') {
+            if (v.d > 250) { e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed; }
+            else {
+              const now = Date.now();
+              if (now - e.lastShot > 2000) {
+                e.lastShot = now;
+                const arrowSpeed = 2.6;
+                enemyArrows.push({ x: e.x, y: e.y, vx: v.nx * arrowSpeed, vy: v.ny * arrowSpeed, rot: Math.atan2(player.y - e.y, player.x - e.x) });
+              }
+            }
+          } else if (e.type === 'golem') {
+            e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed;
+            // Mud golem throws mud at enemies every 5 seconds
+            const now = Date.now();
+            if (now - e.lastAbility > 5000) {
+              e.lastAbility = now;
+              const otherEnemies = enemies.filter(other => other !== e && !other.dead && other.type !== 'golem' && other.type !== 'tree_golem' && other.type !== 'smoke_golem' && other.type !== 'fire_golem');
+              if (otherEnemies.length > 0) {
+                const target = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
+                // Apply smoke buff health bonus if in smoke
+                const healthMultiplier = target.smokeBuffed ? 3 : 2; // 2x from mud, +50% from smoke = 3x total
+                target.hp *= healthMultiplier;
+                target.maxHp *= healthMultiplier;
+                // Mud splash particles
+                for (let k = 0; k < 12; k++) {
+                  const angle = Math.random() * Math.PI * 2;
+                  const speed = Math.random() * 2 + 1;
+                  particles.push({ x: target.x, y: target.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 5 + 3, color: '#5d4e37', start: now, life: 600 });
+                }
+                clampParticles();
+              }
+            }
+          } else if (e.type === 'tree_golem') {
+            // Tree golem spawns only in cardinal/intercardinal directions
+            const angle = Math.atan2(v.ny, v.nx);
+            const snapAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+            const snapX = Math.cos(snapAngle);
+            const snapY = Math.sin(snapAngle);
+            e.x += snapX * effectiveSpeed; e.y += snapY * effectiveSpeed;
+            
+            // Stop periodically to summon root spikes
+            const now = Date.now();
+            if (now - e.lastAbility > 5000) {
+              e.lastAbility = now;
+              const numRoots = Math.floor(Math.random() * 4) + 2; // 2-5 roots
+              for (let i = 0; i < numRoots; i++) {
+                const offsetX = (Math.random() - 0.5) * 60;
+                const offsetY = (Math.random() - 0.5) * 60;
+                rootSpikes.push({ 
+                  id: nextRootId++, 
+                  x: e.x + offsetX, 
+                  y: e.y + offsetY, 
+                  hp: 1, 
+                  maxHp: 1, 
+                  spawnTime: now,
+                  ownerId: e.id
+                });
+              }
+            }
+          } else if (e.type === 'smoke_golem') {
+            // Smoke golem moves like ghost
+            e.sineOffset = (e.sineOffset || 0) + 0.025;
+            const perpX = v.d === 0 ? 0 : -v.ny;
+            const perpY = v.d === 0 ? 0 : v.nx;
+            const sineWave = Math.sin(e.sineOffset) * 35;
+            e.x += v.nx * e.speed + perpX * sineWave * 0.05;
+            e.y += v.ny * e.speed + perpY * sineWave * 0.05;
+            
+            // Leave smoke trail
+            const now = Date.now();
+            if (game.frame % 5 === 0) {
+              e.smokeTrail.push({ x: e.x, y: e.y, created: now });
+              // Remove old smoke (lasts 4.5 seconds - 50% longer)
+              e.smokeTrail = e.smokeTrail.filter(s => now - s.created < 4500);
+            }
+          } else if (e.type === 'fire_golem') {
+            e.x += v.nx * e.speed; e.y += v.ny * e.speed;
+          } else {
+            e.x += v.nx * e.speed; e.y += v.ny * e.speed;
+          }
+
+          // Player collision damage - check if enemy is already dead before processing
+          if (v.d < 60 && !e.dead) {
+            let damage = 10;
+            if (e.type === 'bat') damage = 5;
+            if (e.type === 'golem') damage = 50;
+            if (e.type === 'tree_golem') damage = Math.ceil(player.maxHp / 2);
+            if (e.type === 'smoke_golem') damage = Math.ceil(player.maxHp / 2);
+            if (e.type === 'fire_golem') {
+              if (e.size === 'full') damage = 40;
+              else if (e.size === 'half') damage = 25;
+              else if (e.size === 'quarter') damage = 15;
+            }
+            
+            player.hp -= damage;
+            markEnemyDead(e);
+            if (player.hp <= 0) { 
+              updateUI(); 
+              gameOver(); 
+              return;
+            }
+          }
+        }
+
+        // Bullet collisions
+        for (let j = bullets.length - 1; j >= 0; j--) {
+          const b = bullets[j];
+          
+          // Check root spike collisions first
+          for (let r = rootSpikes.length - 1; r >= 0; r--) {
+            const root = rootSpikes[r];
+            const dist = Math.hypot(b.x - root.x, b.y - root.y);
+            if (Number.isFinite(dist) && dist < 15) {
+              root.hp -= upgrades.damage;
+              if (root.hp <= 0) {
+                rootSpikes.splice(r, 1);
+                const now = Date.now();
+                for (let k = 0; k < 8; k++) {
+                  const angle = Math.random() * Math.PI * 2;
+                  const speed = Math.random() * 2;
+                  particles.push({ x: root.x, y: root.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 3 + 2, color: '#5d4037', start: now, life: 400 });
+                }
+                clampParticles();
+              }
+              bullets.splice(j, 1);
+              break;
+            }
+          }
+          
+          if (j < 0 || j >= bullets.length) continue;
+          
+          for (const e of enemies) {
+            if (e.dead) continue;
+            if (b.hitIds.includes(e.id)) continue;
+            const dist = Math.hypot(b.x - e.x, b.y - e.y);
+            if (Number.isFinite(dist) && dist < 40) {
+              // Golem absorbs shuriken completely - no damage, no ricochet
+              if (e.type === 'golem' || e.type === 'tree_golem' || e.type === 'smoke_golem') {
+                bullets.splice(j, 1);
+                // Create splash particles
+                const now = Date.now();
+                let color = '#5d4e37';
+                if (e.type === 'tree_golem') color = '#5d4037';
+                if (e.type === 'smoke_golem') color = '#616161';
+                for (let k = 0; k < 8; k++) {
+                  const angle = Math.random() * Math.PI * 2;
+                  const speed = Math.random() * 2 + 1;
+                  particles.push({ x: e.x, y: e.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 4 + 2, color: color, start: now, life: 400 });
+                }
+                clampParticles();
+                break;
+              }
+              
+              // Fire golem - only direct hits, stops ricochet
+              if (e.type === 'fire_golem') {
+                if (b.ricochet < (progress.ricochet || 0)) {
+                  // This is a ricochet shot - fire golem immune
+                  bullets.splice(j, 1);
+                  const now = Date.now();
+                  for (let k = 0; k < 8; k++) {
+                    const angle = Math.random() * Math.PI * 2;
+                    const speed = Math.random() * 2 + 1;
+                    particles.push({ x: e.x, y: e.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 4 + 2, color: '#ff9800', start: now, life: 400 });
+                  }
+                  clampParticles();
+                  break;
+                } else {
+                  // Direct hit - defeats fire golem
+                  e.hp -= upgrades.damage;
+                  if (e.hp <= 0) {
+                    // Fire golem splits
+                    if (e.size === 'full') {
+                      // Spawn 2 half-size golems
+                      for (let s = 0; s < 2; s++) {
+                        const angle = (Math.PI * 2 * s) / 2 + (Math.random() - 0.5) * 0.5;
+                        const dist = 50;
+                        enemies.push({ 
+                          id: nextEnemyId++, 
+                          type: 'fire_golem', 
+                          x: e.x + Math.cos(angle) * dist, 
+                          y: e.y + Math.sin(angle) * dist, 
+                          speed: 0.1, 
+                          hp: 1, 
+                          maxHp: 1, 
+                          anim: Math.random() * 100, 
+                          size: 'half' 
+                        });
+                      }
+                    } else if (e.size === 'half') {
+                      // Spawn 2 quarter-size golems
+                      for (let s = 0; s < 2; s++) {
+                        const angle = (Math.PI * 2 * s) / 2 + (Math.random() - 0.5) * 0.5;
+                        const dist = 35;
+                        enemies.push({ 
+                          id: nextEnemyId++, 
+                          type: 'fire_golem', 
+                          x: e.x + Math.cos(angle) * dist, 
+                          y: e.y + Math.sin(angle) * dist, 
+                          speed: 0.3, 
+                          hp: 1, 
+                          maxHp: 1, 
+                          anim: Math.random() * 100, 
+                          size: 'quarter' 
+                        });
+                      }
+                    }
+                    markEnemyDead(e);
+                  }
+                  bullets.splice(j, 1);
+                  break;
+                }
+              }
+              
+              // Metal enemies are immune to shuriken damage
+              if (!e.metal) {
+                e.hp -= upgrades.damage;
+                if (e.hp <= 0) markEnemyDead(e);
+              } else {
+                // Create metal clang particles
+                const now = Date.now();
+                for (let k = 0; k < 8; k++) {
+                  const angle = Math.random() * Math.PI * 2;
+                  const speed = Math.random() * 2 + 1;
+                  particles.push({ x: e.x, y: e.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 4 + 2, color: '#c0c0c0', start: now, life: 400 });
+                }
+                clampParticles();
+              }
+              
+              b.hitIds.push(e.id);
+              let removeBullet = true;
+
+              if (b.ricochet > 0 && removeBullet) {
+                const nearest = findNearest(b.x, b.y, b.hitIds);
+                if (nearest) {
+                  const rv = norm(nearest.x - b.x, nearest.y - b.y);
+                  const speed = Math.min(8, Math.hypot(b.vx, b.vy));
+                  b.vx = rv.nx * speed; b.vy = rv.ny * speed;
+                  b.ricochet--; removeBullet = false;
+                }
+              }
+              if (removeBullet) { bullets.splice(j, 1); break; }
+            }
+          }
+        }
+
+        // Darts collisions
+        for (let i = darts.length - 1; i >= 0; i--) {
+          const d = darts[i];
+          d.x += d.vx; d.y += d.vy;
+          const traveled = Math.hypot(d.x - d.startX, d.y - d.startY);
+          if (traveled > d.maxRange || d.x < 0 || d.x > 800 || d.y < 0 || d.y > 600) { darts.splice(i, 1); continue; }
+
+          let hit = false;
+          for (const e of enemies) {
+            if (e.dead) continue;
+            if (d.hitIds && d.hitIds.includes(e.id)) continue; // Skip if already hit this enemy
+            
+            const dist = Math.hypot(d.x - e.x, d.y - e.y);
+            if (Number.isFinite(dist) && dist < 30) {
+              // Tree golem - defeated by darts (even with 0 damage from utility trap)
+              if (e.type === 'tree_golem') {
+                markEnemyDead(e);
+                // Remove all root spikes owned by this tree golem
+                rootSpikes = rootSpikes.filter(root => root.ownerId !== e.id);
+                
+                // Shatter dart: spawn smaller darts on defeat
+                if (progress.dartShatter > 0) {
+                  for (let s = 0; s < progress.dartShatter; s++) {
+                    if (darts.length >= MAX_DARTS) break;
+                    const angle = Math.random() * Math.PI * 2;
+                    darts.push({
+                      x: e.x,
+                      y: e.y,
+                      vx: Math.cos(angle) * 3,
+                      vy: Math.sin(angle) * 3,
+                      startX: e.x,
+                      startY: e.y,
+                      maxRange: upgrades.dartRange * 0.5,
+                      hitIds: [e.id] // Don't hit same enemy twice
+                    });
+                  }
+                }
+                
+                darts.splice(i, 1);
+                hit = true;
+                break;
+              }
+              
+              // Other golems immune to darts
+              if (e.type === 'golem' || e.type === 'smoke_golem' || e.type === 'fire_golem') {
+                darts.splice(i, 1);
+                hit = true;
+                break;
+              }
+              
+              e.hp -= upgrades.damage;
+              
+              if (e.hp <= 0) {
+                markEnemyDead(e);
+                
+                // Shatter dart: spawn smaller darts on defeat
+                if (progress.dartShatter > 0) {
+                  for (let s = 0; s < progress.dartShatter; s++) {
+                    if (darts.length >= MAX_DARTS) break;
+                    const angle = Math.random() * Math.PI * 2;
+                    darts.push({
+                      x: e.x,
+                      y: e.y,
+                      vx: Math.cos(angle) * 3,
+                      vy: Math.sin(angle) * 3,
+                      startX: e.x,
+                      startY: e.y,
+                      maxRange: upgrades.dartRange * 0.5,
+                      hitIds: [e.id] // Don't hit same enemy twice
+                    });
+                  }
+                }
+              }
+              
+              darts.splice(i, 1);
+              hit = true;
+              break;
+            }
+          }
+          if (hit) continue;
+        }
+
+        // Enemy arrows
+        for (let i = enemyArrows.length - 1; i >= 0; i--) {
+          const a = enemyArrows[i];
+          a.x += a.vx; a.y += a.vy;
+          if (a.x < -50 || a.x > 850 || a.y < -50 || a.y > 650) { enemyArrows.splice(i, 1); continue; }
+          const dist = Math.hypot(a.x - player.x, a.y - player.y);
+          if (dist < 30) { player.hp -= 10; enemyArrows.splice(i, 1); if (player.hp <= 0) gameOver(); }
+        }
+
+        // Particles
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx; p.y += p.vy;
+          if (Date.now() - p.start >= p.life) particles.splice(i, 1);
+        }
+
+        // Finalize deaths (single sweep)
+        sweepDeadEnemies();
+
+        updateUI();
+
+        // Panic fallback
+        if (bullets.length > MAX_BULLETS * 2) bullets.length = MAX_BULLETS;
+        if (darts.length > MAX_DARTS * 2) darts.length = MAX_DARTS;
+        if (enemyArrows.length > 120) enemyArrows.length = 80;
+        if (particles.length > 800) particles.splice(0, particles.length - 600);
+      } catch (err) {
+        // Soft recovery
+        bullets.length = Math.min(bullets.length, MAX_BULLETS);
+        darts.length = Math.min(darts.length, MAX_DARTS);
+      }
+    }
+
+    function createDefeatParticles(x, y, type) {
+      let mainColor = '#2ecc71', altColor1 = '#27ae60', altColor2 = '#34eb77';
+      if (type === 'bat') { mainColor = '#1a1a1a'; altColor1 = '#2a2a2a'; altColor2 = '#0a0a0a'; }
+      else if (type === 'ghost') { mainColor = '#e8e8ff'; altColor1 = '#d0d0ff'; altColor2 = '#f0f0ff'; }
+      else if (type === 'eye') { mainColor = '#8b00ff'; altColor1 = '#ffffff'; altColor2 = '#6a00cc'; }
+      else if (type === 'archer') { mainColor = '#e8dcc8'; altColor1 = '#d4c8b0'; altColor2 = '#f0e4d0'; }
+      else if (type === 'golem') { mainColor = '#5d4e37'; altColor1 = '#7d6e47'; altColor2 = '#4d3e27'; }
+
+      for (let i = 0; i < 8; i++) {
+        const angle = (Math.PI * 2 * i) / 8;
+        const speed = (2 + Math.random() * 2) * 0.25;
+        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: (6 + Math.random() * 4) * 0.5, color: mainColor, start: Date.now(), life: 800 });
+      }
+      for (let i = 0; i < 12; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = (1 + Math.random() * 3) * 0.25;
+        particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: (3 + Math.random() * 3) * 0.5, color: Math.random() > 0.5 ? altColor1 : altColor2, start: Date.now(), life: 600 });
+      }
+      clampParticles();
+    }
+
+    function drawRootSpike(root) {
+      const now = Date.now();
+      const age = now - root.spawnTime;
+      const growthProgress = Math.min(age / 300, 1);
+
+      const height = 20 * growthProgress;
+      
+      // Shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
+      ctx.fillRect(root.x - 8, root.y + 2, 16, 4);
+
+      // Root spike
+      ctx.fillStyle = '#5d4037';
+      ctx.fillRect(root.x - 6, root.y - height, 12, height + 2);
+
+      // Spike tip
+      ctx.fillStyle = '#3e2723';
+      ctx.fillRect(root.x - 4, root.y - height - 4, 8, 4);
+      ctx.fillRect(root.x - 2, root.y - height - 6, 4, 2);
+
+      // Health bar if damaged
+      if (root.hp < root.maxHp) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(root.x - 8, root.y - height - 10, 16, 3);
+        ctx.fillStyle = '#e74c3c';
+        ctx.fillRect(root.x - 8, root.y - height - 10, 16 * (root.hp / root.maxHp), 3);
+      }
+    }
+
+    function drawSmokeTrail(trail) {
+      const now = Date.now();
+      const age = now - trail.created;
+      const alpha = Math.max(0, 1 - (age / 3000));
+      
+      ctx.globalAlpha = alpha * 0.5;
+      ctx.fillStyle = '#757575';
+      ctx.fillRect(trail.x - 15, trail.y - 15, 30, 30);
+      ctx.globalAlpha = 1;
+    }
+
+    function draw() {
+      drawBackground();
+      
+      // Draw smoke trails from smoke golems
+      for (const e of enemies) {
+        if (e.type === 'smoke_golem' && e.smokeTrail) {
+          e.smokeTrail.forEach(drawSmokeTrail);
+        }
+      }
+      
+      shadowTraps.forEach(drawShadowTrap);
+      rootSpikes.forEach(drawRootSpike);
+      enemies.forEach(drawEnemy);
+      bullets.forEach(drawBullet);
+      darts.forEach(drawDart);
+      enemyArrows.forEach(drawEnemyArrow);
+      particles.forEach(drawParticle);
+      // Player last so he's above effects
+      drawPlayer();
+    }
+
+    function gameLoop() {
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function updateUI() {
+      const expReq = player.level * player.level * 50;
+      document.getElementById('hpText').textContent = `${Math.max(0, player.hp)}/${player.maxHp}`;
+      document.getElementById('xpText').textContent = `${player.exp}/${expReq}`;
+      document.getElementById('lvl').textContent = player.level;
+      document.getElementById('kills').textContent = player.kills;
+      document.getElementById('time').textContent = Math.floor(game.time / 1000);
+      document.getElementById('coins').textContent = progress.runCoins;
+      document.getElementById('run').textContent = progress.runNumber;
+    }
+
+    function checkLevelUp() {
+      const expReq = player.level * player.level * 50;
+      if (player.exp >= expReq) {
+        player.exp -= expReq;
+        player.level++;
+        game.paused = true;
+        showLevelUpText();
+        updateUI();
+        setTimeout(() => { startQuiz(false); }, 500);
+      }
+    }
+
+    // Quiz flow (unchanged visually; stable)
+    function startQuiz(forPowerup) {
+      game.paused = true;
+      quiz.index = 0;
+      quiz.correct = 0;
+      quiz.forPowerup = forPowerup;
+      quiz.usedQuestions = [];
+      document.getElementById('quizOverlay').classList.add('show');
+      document.getElementById('quizResult').style.display = 'none';
+      showQuestion();
+    }
+
+    function showQuestion() {
+      if (quiz.index >= 4) { showQuizResult(); return; }
+      const available = questions.filter((q, idx) => !quiz.usedQuestions.includes(idx));
+      const q = available[Math.floor(Math.random() * available.length)];
+      const originalIndex = questions.indexOf(q);
+      quiz.usedQuestions.push(originalIndex);
+      document.getElementById('quizNum').textContent = `Question ${quiz.index + 1}/4`;
+      document.getElementById('quizQ').textContent = q.q;
+
+      const container = document.getElementById('quizOpts');
+      container.innerHTML = '';
+      q.o.map((opt, idx) => ({ text: opt, isCorrect: idx === q.a })).sort(() => Math.random() - 0.5).forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'option';
+        btn.textContent = opt.text;
+        btn.onclick = () => answerQuestion(opt.isCorrect, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    function answerQuestion(correct, btn) {
+      const all = document.querySelectorAll('#quizOpts .option');
+      all.forEach(o => o.classList.add('disabled'));
+      if (correct) { btn.classList.add('right'); quiz.correct++; }
+      else { btn.classList.add('wrong'); }
+      setTimeout(() => { quiz.index++; showQuestion(); }, 1000);
+    }
+
+    function showQuizResult() {
+      document.getElementById('quizNum').textContent = 'Complete!';
+      document.getElementById('quizQ').textContent = '';
+      document.getElementById('quizOpts').innerHTML = '';
+      const res = document.getElementById('quizResult');
+      res.style.display = 'block';
+      
+      if (quiz.correct === 0) {
+        res.innerHTML = `<div style="font-size: 24px; margin-bottom: 10px;">❌ 0 Questions Correct</div>
+                         <div style="font-size: 18px; color: #e74c3c;">No powerups this time!</div>`;
+        setTimeout(() => {
+          document.getElementById('quizOverlay').classList.remove('show');
+          if (quiz.forPowerup) { continueStartPhase(); } else { game.paused = false; }
+        }, 1500);
+        return;
+      }
+      
+      const numOptions = quiz.correct;
+      res.innerHTML = `<div style="font-size: 24px; margin-bottom: 10px;">✅ ${quiz.correct} Questions Correct!</div>
+                       <div style="font-size: 18px; color: #00d4ff;">Choose 1 powerup from ${numOptions} options</div>`;
+      
+      setTimeout(() => {
+        document.getElementById('quizOverlay').classList.remove('show');
+        if (quiz.correct === 4) {
+          const bonusOverlay = document.getElementById('bonusOverlay');
+          document.getElementById('bonusName').textContent = "⚡ All Cooldowns -5%";
+          bonusOverlay.classList.add('show');
+          setTimeout(() => { bonusOverlay.classList.remove('show'); showUpgrades(numOptions, true); }, 1200);
+        } else {
+          showUpgrades(numOptions, false);
+        }
+      }, 900);
+    }
+
+    function showUpgrades(numOptions = 1, hasBonus = false) {
+      const currentWeaponUpgrades = [{ name: "⚡ Fire Rate +10%", desc: "Throw shurikens faster", apply: () => { upgrades.cooldown *= 0.9; }}];
+
+      if (Math.random() < 0.5) {
+        currentWeaponUpgrades.push({ name: "⚔️ Shuriken Damage +1", desc: "More damage per hit", apply: () => { upgrades.damage += 1; }});
+      }
+
+      if (upgrades.smokeUnlocked) {
+        if (Math.random() < 0.5) currentWeaponUpgrades.push({name: "💨 Smoke Damage +1", desc: "Stronger smoke bombs", apply: () => { upgrades.smokeDamage += 1; }});
+        currentWeaponUpgrades.push({name: "⚡ Smoke Speed +10%", desc: "Faster smoke bombs", apply: () => { upgrades.smokeCooldown *= 0.9; }});
+      }
+
+      if (upgrades.shadowUnlocked) {
+        currentWeaponUpgrades.push({name: "🌑 Shadow Radius +10%", desc: "Larger explosion area", apply: () => { upgrades.shadowRadius *= 1.1; }});
+        if (Math.random() < 0.5) currentWeaponUpgrades.push({name: "💥 Shadow Damage +1", desc: "More trap damage", apply: () => { upgrades.shadowDamage += 1; }});
+      }
+
+      if (upgrades.dartUnlocked) {
+        currentWeaponUpgrades.push({name: "🎯 Dart Amount +2", desc: "Fire more darts", apply: () => { upgrades.dartAmount += 2; }});
+        currentWeaponUpgrades.push({name: "⚡ Dart Speed +10%", desc: "Fire darts more often", apply: () => { upgrades.dartCooldown *= 0.9; }});
+      }
+
+      const newWeaponUnlocks = [];
+      if (!upgrades.smokeUnlocked) newWeaponUnlocks.push({name: "💣 UNLOCK Smoke Bomb", desc: "Auto-throw smoke every 4s", apply: () => { upgrades.smokeUnlocked = true; lastSmoke = Date.now(); }});
+      if (!upgrades.shadowUnlocked) newWeaponUnlocks.push({name: "🌑 UNLOCK Shadow Trap", desc: "Click to place explosive trap (10s CD)", apply: () => { upgrades.shadowUnlocked = true; lastShadow = 0; shadowReady = true; }});
+      if (!upgrades.dartUnlocked) newWeaponUnlocks.push({name: "🎯 UNLOCK Blow Dart", desc: "Auto-fire 2 darts every 3s", apply: () => { upgrades.dartUnlocked = true; upgrades.dartAmount = 2; lastDart = Date.now(); }});
+
+      const allUpgrades = [...currentWeaponUpgrades, ...newWeaponUnlocks];
+
+      if (hasBonus) {
+        upgrades.cooldown *= 0.95;
+        upgrades.dartCooldown *= 0.95;
+        upgrades.shadowCooldown *= 0.95;
+        upgrades.smokeCooldown *= 0.95;
+      }
+
+      const selectedUpgrades = [];
+      const shuffled = allUpgrades.sort(() => Math.random() - 0.5);
+      
+      for (let i = 0; i < Math.min(numOptions, shuffled.length); i++) {
+        selectedUpgrades.push(shuffled[i]);
+      }
+
+      const container = document.getElementById('upgradeOpts');
+      container.innerHTML = '';
+      
+      const header = document.createElement('div');
+      header.style.cssText = 'color: #00d4ff; font-size: 18px; margin-bottom: 15px; text-align: center;';
+      header.textContent = `Choose 1 powerup`;
+      container.appendChild(header);
+      
+      selectedUpgrades.forEach(up => {
+        const div = document.createElement('div');
+        div.className = 'option';
+        div.innerHTML = `<div style="font-size: 18px; font-weight: bold; margin-bottom: 5px;">${up.name}</div><div style="color: #00d4ff; font-size: 14px;">${up.desc}</div>`;
+        div.onclick = () => {
+          up.apply();
+          document.getElementById('upgradeOverlay').classList.remove('show');
+          if (quiz.forPowerup) { continueStartPhase(); } else { game.paused = false; }
+        };
+        container.appendChild(div);
+      });
+
+      document.getElementById('upgradeOverlay').classList.add('show');
+    }
+
+    function renderShop() {
+      const container = document.getElementById('shopItems');
+      container.innerHTML = '';
+
+      // Section 1: General Upgrades
+      const section1 = document.createElement('div');
+      section1.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">⭐ General Upgrades</h3>';
+      container.appendChild(section1);
+      
+      addShopItem(container, {id: 'powerup', name: '⭐ Starting Powerups', desc: 'Choose powerups before run', base: 40, mult: 1.5, owned: progress.powerupStart, canBuy: true});
+
+      // Section 2: Smoke Bomb Upgrades
+      const section2 = document.createElement('div');
+      section2.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">💣 Smoke Bomb Upgrades</h3>';
+      container.appendChild(section2);
+      
+      addShopItem(container, {id: 'smoke', name: '💣 Start with Smoke Bomb', desc: 'Begin with smoke bomb unlocked', base: 50, mult: 1.5, owned: progress.smokeStart, canBuy: progress.smokeStart === 0});
+      
+      if (progress.smokeStart > 0) {
+        addShopItem(container, {id: 'smokePriority', name: '🎯 Priority Shot', desc: '+5% chance to target closest enemy', base: 80, mult: 1.5, owned: progress.smokePriority, canBuy: true});
+        addShopItem(container, {id: 'smokeCluster', name: '💥 Cluster Shot', desc: 'Spawn cluster bombs on defeat (radius 25)', base: 80, mult: 1.5, owned: progress.smokeCluster, canBuy: true});
+      }
+
+      // Section 3: Blow Dart Upgrades
+      const section3 = document.createElement('div');
+      section3.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🎯 Blow Dart Upgrades</h3>';
+      container.appendChild(section3);
+      
+      addShopItem(container, {id: 'dart', name: '🎯 Start with Blow Dart', desc: 'Begin with blow dart unlocked', base: 50, mult: 1.5, owned: progress.dartStart, canBuy: progress.dartStart === 0});
+      
+      if (progress.dartStart > 0) {
+        addShopItem(container, {id: 'dartSpread', name: '📐 Increase Dart Spread', desc: 'Fire extra darts in tight cluster', base: 80, mult: 1.5, owned: progress.dartSpread, canBuy: true});
+        addShopItem(container, {id: 'dartShatter', name: '💎 Shatter Dart', desc: 'Darts explode into smaller darts on defeat', base: 80, mult: 1.5, owned: progress.dartShatter, canBuy: true});
+      }
+
+      // Section 4: Shadow Trap Upgrades
+      const section4 = document.createElement('div');
+      section4.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🌑 Shadow Trap Upgrades</h3>';
+      container.appendChild(section4);
+      
+      addShopItem(container, {id: 'shadow', name: '🌑 Start with Shadow Trap', desc: 'Begin with shadow trap unlocked', base: 50, mult: 1.5, owned: progress.shadowStart, canBuy: progress.shadowStart === 0});
+      
+      if (progress.shadowStart > 0) {
+        addShopItem(container, {id: 'shadowUtility', name: '🛡️ Utility Trap', desc: 'Slow enemies 5%, +1 bonus damage per level', base: 80, mult: 1.5, owned: progress.shadowUtility, canBuy: true});
+        addShopItem(container, {id: 'shadowDouble', name: '♻️ Double Trap', desc: '+5% chance to respawn on same spot', base: 80, mult: 1.5, owned: progress.shadowDouble, canBuy: true});
+      }
+
+      // Section 5: Shuriken Upgrades
+      const section5 = document.createElement('div');
+      section5.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">⚔️ Shuriken Upgrades</h3>';
+      container.appendChild(section5);
+      
+      addShopItem(container, {id: 'reverse', name: '🔄 Reverse Shot', desc: 'Fire opposite direction', base: 80, mult: 1.5, owned: progress.reverseShot, canBuy: progress.reverseShot === 0});
+      addShopItem(container, {id: 'wall', name: '🔲 Wall Bounce', desc: 'Shurikens bounce off walls', base: 80, mult: 1.5, owned: progress.wallBounce, canBuy: true});
+      addShopItem(container, {id: 'rico', name: '⚡ Ricochet Shot', desc: 'Bounce to nearest enemy', base: 80, mult: 1.5, owned: progress.ricochet, canBuy: true});
+
+      document.getElementById('totalCoins').textContent = progress.totalCoins;
+    }
+    
+    function addShopItem(container, item) {
+      const cost = Math.floor(item.base * Math.pow(item.mult, item.owned));
+      const canAfford = progress.totalCoins >= cost;
+      const canBuy = canAfford && item.canBuy;
+
+      const div = document.createElement('div');
+      div.className = 'shop-item';
+      div.innerHTML = `
+        <div class="shop-header">
+          <div class="shop-name">${item.name}</div>
+          <div class="shop-cost">🪙 ${cost}</div>
+        </div>
+        <div class="shop-desc">${item.desc}</div>
+        ${item.owned > 0 ? `<div class="shop-owned">Level: ${item.owned}</div>` : ''}
+        <button class="shop-btn" id="buy_${item.id}" ${!canBuy ? 'disabled' : ''}>
+          ${!item.canBuy ? 'Max' : canAfford ? 'Buy' : 'Need More'}
+        </button>
+      `;
+      container.appendChild(div);
+
+      const btn = document.getElementById(`buy_${item.id}`);
+      if (canBuy) btn.onclick = () => buyItem(item.id, cost);
+    }
+
+    function buyItem(id, cost) {
+      if (progress.totalCoins < cost) return;
+      progress.totalCoins -= cost;
+
+      if (id === 'powerup') progress.powerupStart++;
+      else if (id === 'smoke') progress.smokeStart++;
+      else if (id === 'smokePriority') progress.smokePriority++;
+      else if (id === 'smokeCluster') progress.smokeCluster++;
+      else if (id === 'dart') progress.dartStart++;
+      else if (id === 'dartSpread') progress.dartSpread++;
+      else if (id === 'dartShatter') progress.dartShatter++;
+      else if (id === 'shadow') progress.shadowStart++;
+      else if (id === 'shadowUtility') progress.shadowUtility++;
+      else if (id === 'shadowDouble') progress.shadowDouble++;
+      else if (id === 'reverse') progress.reverseShot++;
+      else if (id === 'wall') progress.wallBounce++;
+      else if (id === 'rico') progress.ricochet++;
+
+      renderShop();
+      updateUI();
+    }
+
+    function gameOver() {
+      game.active = false;
+      game.paused = true;
+      progress.deaths++;
+
+      document.getElementById('deathOverlay').classList.add('show');
+
+      setTimeout(() => {
+        document.getElementById('deathOverlay').classList.remove('show');
+        const wipe = document.getElementById('screenWipe');
+        wipe.classList.add('wipe');
+
+        setTimeout(() => {
+          progress.totalCoins += progress.runCoins;
+
+          document.getElementById('finalLvl').textContent = player.level;
+          document.getElementById('finalKills').textContent = player.kills;
+          document.getElementById('finalTime').textContent = Math.floor(game.time / 1000);
+          document.getElementById('finalCoins').textContent = progress.runCoins;
+
+          renderShop();
+          document.getElementById('gameOverOverlay').classList.add('show');
+
+          wipe.classList.remove('wipe');
+        }, 750);
+      }, 2000);
+    }
+
+    function reset() {
+      player.x = 400; player.y = 300;
+      player.hp = 100; player.maxHp = 100;
+      player.level = 1; player.exp = 0; player.kills = 0;
+
+      enemies = []; bullets = []; particles = []; enemyArrows = []; shadowTraps = []; darts = []; rootSpikes = [];
+      nextEnemyId = 1;
+      nextRootId = 1;
+
+      game.time = 0; game.frame = 0;
+      lastShoot = 0; lastSmoke = 0; lastShadow = 0; lastDart = 0;
+      shadowReady = true;
+      targetX = 401; targetY = 300;
+
+      upgrades.projSpeed = 5;
+      upgrades.damage = 1;
+      upgrades.cooldown = 900;
+      upgrades.smokeUnlocked = progress.smokeStart > 0;
+      upgrades.smokeDamage = 1;
+      upgrades.smokeCooldown = 4000;
+      upgrades.shadowUnlocked = progress.shadowStart > 0;
+      upgrades.shadowDamage = 2;
+      upgrades.shadowRadius = 100;
+      upgrades.shadowCooldown = 10000;
+      upgrades.dartUnlocked = progress.dartStart > 0;
+      upgrades.dartAmount = 2;
+      upgrades.dartRange = 180;
+      upgrades.dartCooldown = 3000;
+
+      progress.runCoins = 10;
+
+      updateUI();
+      document.getElementById('gameOverOverlay').classList.remove('show');
+      game.active = true;
+      game.paused = false;
+    }
+
+    function startPowerupPhase() {
+      if (progress.powerupStart > 0) {
+        quiz.pending = progress.powerupStart;
+        continueStartPhase();
+      } else {
+        game.active = true;
+        game.paused = false;
+      }
+    }
+
+    function continueStartPhase() {
+      if (quiz.pending > 0) {
+        quiz.pending--;
+        startQuiz(true);
+      } else {
+        game.active = true;
+        game.paused = false;
+      }
+    }
+
+    canvas.addEventListener('click', (e) => {
+      if (!game.active || game.paused) return;
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+
+      if (upgrades.shadowUnlocked && shadowReady) {
+        const now = Date.now();
+        if (now - lastShadow >= upgrades.shadowCooldown) {
+          shadowTraps.push({ x: clickX, y: clickY, placed: now, activated: false });
+          lastShadow = now;
+          shadowReady = false;
+          setTimeout(() => { shadowReady = true; }, upgrades.shadowCooldown);
+        }
+      }
+
+      targetX = clickX; targetY = clickY;
+    });
+
+    document.getElementById('startBtn').addEventListener('click', () => {
+      document.getElementById('startOverlay').classList.remove('show');
+      document.getElementById('enemyGuideOverlay').classList.add('show');
+    });
+
+    document.getElementById('startGameBtn').addEventListener('click', () => {
+      document.getElementById('enemyGuideOverlay').classList.remove('show');
+      reset();
+      updateUI();
+      startPowerupPhase();
+      gameLoop();
+    });
+
+    document.getElementById('restartBtn').addEventListener('click', () => {
+      progress.runNumber++;
+      reset();
+      updateUI();
+      startPowerupPhase();
+      gameLoop();
+    });
+
+    // Canva Element SDK init
+    async function onConfigChange(config) {
+      const title = config.game_title || defaultConfig.game_title;
+      document.getElementById('titleText').textContent = title;
+      document.title = title;
+
+      const enemyName = config.enemy_name || defaultConfig.enemy_name;
+      const enemyLine = document.getElementById('enemyLine');
+      if (enemyLine) enemyLine.textContent = `👾 Defeat ${enemyName} to gain XP and coins`;
+    }
+
+    function mapToCapabilities(config) {
+      return { recolorables: [], borderables: [], fontEditable: undefined, fontSizeable: undefined };
+    }
+
+    function mapToEditPanelValues(config) {
+      return new Map([
+        ["game_title", config.game_title || defaultConfig.game_title],
+        ["enemy_name", config.enemy_name || defaultConfig.enemy_name]
+      ]);
+    }
+
+    if (window.elementSdk) {
+      window.elementSdk.init({
+        defaultConfig,
+        onConfigChange,
+        mapToCapabilities,
+        mapToEditPanelValues
+      });
+    }
+
+    gameLoop();
+  </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a1c7f3bc0c5d9a8',t:'MTc2MzY4OTQxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
