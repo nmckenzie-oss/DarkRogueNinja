@@ -1,10 +1,10 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260630-05-8900874"}');</script><script src="/_sdk/e4192b04afde3ce7.telemetry_sdk.js" integrity="sha512-4eZpyKBd3YJnsIPrIpaBqo7QT5UZ6+KSFXkSu1IQiB7jKM8y67ChRhZ5Yh6JfuOJCbPdISiNcS6nLKZzIMG1uQ=="></script>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dark Rogue</title>
-  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/55a31eac937b0c74.element_sdk.js" integrity="sha512-0kIuEfhRPNmBFXTjGHEKf+empPPO/fnvfhJQ9f7lB5PiWMx4+JpB4JhdGG3l/nAaQlpbbl3k4UyChI6a2CursA=="></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&display=swap');
 
@@ -165,243 +165,194 @@
       100% { left: 100%; opacity: 1; }
     }
   </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
- </head>
- <body>
+</head>
+<body>
   <div id="app">
-   <canvas id="canvas" width="800" height="600" aria-label="Game canvas"></canvas>
+    <canvas id="canvas" width="800" height="600" aria-label="Game canvas"></canvas>
   </div>
+
   <div class="hud" aria-live="polite">
-   <div class="panel">
-    <div>
-     ❤️ HP: <span id="hpText">100/100</span>
+    <div class="panel">
+      <div>❤️ HP: <span id="hpText">100/100</span></div>
+      <div>⭐ LVL <span id="lvl">1</span></div>
+      <div>💀 <span id="kills">0</span></div>
     </div>
-    <div>
-     ⭐ LVL <span id="lvl">1</span>
+    <div class="panel">
+      <div>⭐ XP: <span id="xpText">0</span></div>
+      <div>🏃 Run <span id="run">1</span></div>
+      <div>⏱️ <span id="time">0</span>s</div>
+      <div>🪙 <span id="coins">0</span></div>
     </div>
-    <div>
-     💀 <span id="kills">0</span>
-    </div>
-   </div>
-   <div class="panel">
-    <div>
-     ⭐ XP: <span id="xpText">0</span>
-    </div>
-    <div>
-     🏃 Run <span id="run">1</span>
-    </div>
-    <div>
-     ⏱️ <span id="time">0</span>s
-    </div>
-    <div>
-     🪙 <span id="coins">0</span>
-    </div>
-   </div>
   </div>
+
   <div id="startOverlay" class="overlay show" role="dialog" aria-modal="true">
-   <div class="box">
-    <h1 class="title" id="titleText">Dark Rogue</h1>
-    <p class="text">🥷 You are a ninja trapped in place!</p>
-    <p class="text">🎯 Click to throw shurikens at enemies</p>
-    <p class="text" id="enemyLine">👾 Defeat enemies to gain XP and coins</p>
-    <p class="text">📚 Answer quiz questions for upgrades</p>
-    <p class="text" style="color: #ff6b35; font-weight: bold;">🗿 Mud Golems can only be defeated by shadow traps!</p><button class="btn" id="startBtn">Start Game</button>
-   </div>
+    <div class="box">
+      <h1 class="title" id="titleText">Dark Rogue</h1>
+      <p class="text">🥷 You are a ninja trapped in place!</p>
+      <p class="text">🎯 Click to throw shurikens at enemies</p>
+      <p class="text" id="enemyLine">👾 Defeat enemies to gain XP and coins</p>
+      <p class="text">📚 Answer quiz questions for upgrades</p>
+      
+      <div style="margin-top: 25px; margin-bottom: 15px;">
+        <h3 class="title" style="font-size: 20px; color: #00d4ff; margin-bottom: 10px;">Choose Question Bank</h3>
+        <div id="genresOption" class="option" style="background: #6a0572; border-color: #e94560;">
+          <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"> ⚛️ Year 10 forces</div>
+          <div style="color: #00d4ff; font-size: 13px;">Questions about forces</div>
+        </div>
+        <div id="elementsOption" class="option">
+          <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">⚛️ Year 10 Speed</div>
+          <div style="color: #00d4ff; font-size: 13px;">Questions about Speed Distance and Time</div>
+        </div>
+      </div>
+      
+      <button class="btn" id="startBtn">Start Game</button>
+    </div>
   </div>
+
   <div id="quizOverlay" class="overlay" role="dialog" aria-modal="true">
-   <div class="box">
-    <h2 class="title">Level Up Quiz!</h2>
-    <p class="text" id="quizNum"></p>
-    <p class="text" id="quizQ" style="font-weight: bold; font-size: 18px;"></p>
-    <div id="quizOpts"></div>
-    <p class="text" id="quizResult" style="display: none; font-size: 20px;"></p>
-   </div>
+    <div class="box">
+      <h2 class="title">Level Up Quiz!</h2>
+      <p class="text" id="quizNum"></p>
+      <p class="text" id="quizQ" style="font-weight: bold; font-size: 18px;"></p>
+      <div id="quizOpts"></div>
+      <p class="text" id="quizResult" style="display: none; font-size: 20px;"></p>
+    </div>
   </div>
+
   <div id="bonusOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="bonusText">
-   <div class="box" style="text-align: center;">
-    <h2 class="title" style="color: #d4af37;">Perfect Score!</h2>
-    <p class="text" id="bonusText">4/4 correct — bonus powerup unlocked: <span id="bonusName" style="color:#fff; font-weight:bold;">TBD</span></p>
-   </div>
+    <div class="box" style="text-align: center;">
+      <h2 class="title" style="color: #d4af37;">Perfect Score!</h2>
+      <p class="text" id="bonusText">4/4 correct — bonus powerup unlocked: <span id="bonusName" style="color:#fff; font-weight:bold;">TBD</span></p>
+    </div>
   </div>
+
   <div id="upgradeOverlay" class="overlay" role="dialog" aria-modal="true">
-   <div class="box">
-    <h2 class="title">Choose Upgrade!</h2>
-    <div id="upgradeOpts"></div>
-   </div>
+    <div class="box">
+      <h2 class="title">Choose Upgrade!</h2>
+      <div id="upgradeOpts"></div>
+    </div>
   </div>
+
   <div id="screenWipe" aria-hidden="true"></div>
+
   <div id="enemyGuideOverlay" class="overlay" role="dialog" aria-modal="true">
-   <div class="box">
-    <h2 class="title">Enemy Guide</h2>
-    <p class="text" style="text-align: center; margin-bottom: 20px;">Know your foes before battle!</p>
-    <div style="display: grid; gap: 15px;">
-     <div class="shop-item" style="border-color: #2ecc71;">
-      <div class="shop-header">
-       <div class="shop-name">
-        🟢 Slime
-       </div>
-       <div class="shop-cost" style="color: #f39c12;">
-        Speed: Medium
-       </div>
+    <div class="box">
+      <h2 class="title">Enemy Guide</h2>
+      <p class="text" style="text-align: center; margin-bottom: 20px;">Know your foes before battle!</p>
+      
+      <div style="display: grid; gap: 15px;">
+        <div class="shop-item" style="border-color: #2ecc71;">
+          <div class="shop-header">
+            <div class="shop-name">🟢 Slime</div>
+            <div class="shop-cost" style="color: #f39c12;">Speed: Medium</div>
+          </div>
+          <div class="shop-desc">Basic enemy • Defeated by shurikens</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #9b59b6;">
+          <div class="shop-header">
+            <div class="shop-name">🦇 Bat</div>
+            <div class="shop-cost" style="color: #e74c3c;">Speed: Fast</div>
+          </div>
+          <div class="shop-desc">Spawns in groups • Low health • Quick attacks</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #3498db;">
+          <div class="shop-header">
+            <div class="shop-name">👻 Ghost</div>
+            <div class="shop-cost" style="color: #2ecc71;">Speed: Slow</div>
+          </div>
+          <div class="shop-desc">Moves side-to-side • High health • Phasing movement</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #8b00ff;">
+          <div class="shop-header">
+            <div class="shop-name">👁️ Eye</div>
+            <div class="shop-cost" style="color: #2ecc71;">Speed: Slow</div>
+          </div>
+          <div class="shop-desc">Teleports every 3 seconds • High health • Unpredictable</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #f8f8f0;">
+          <div class="shop-header">
+            <div class="shop-name">💀 Skeleton Archer</div>
+            <div class="shop-cost" style="color: #f39c12;">Speed: Medium</div>
+          </div>
+          <div class="shop-desc">Ranged attacker • Shoots arrows • Keeps distance</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #5d4e37;">
+          <div class="shop-header">
+            <div class="shop-name">🗿 Mud Golem</div>
+            <div class="shop-cost" style="color: #27ae60;">Speed: Very Slow</div>
+          </div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shurikens • Only defeated by shadow traps</div>
+          <div class="shop-desc">Throws mud at enemies every 5s to double their health</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #3e2723;">
+          <div class="shop-header">
+            <div class="shop-name">🌳 Tree Golem</div>
+            <div class="shop-cost" style="color: #27ae60;">Speed: Very Slow</div>
+          </div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shurikens • Only defeated by blow darts</div>
+          <div class="shop-desc">Moves in straight lines • Spawns root spikes that block shurikens</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #616161;">
+          <div class="shop-header">
+            <div class="shop-name">💨 Smoke Golem</div>
+            <div class="shop-cost" style="color: #f39c12;">Speed: Medium</div>
+          </div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shurikens • Only defeated by smoke bombs</div>
+          <div class="shop-desc">Leaves smoke trail that buffs nearby enemies (+50% health & speed)</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #d32f2f;">
+          <div class="shop-header">
+            <div class="shop-name">🔥 Fire Golem</div>
+            <div class="shop-cost" style="color: #f39c12;">Speed: Slow → Fast</div>
+          </div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to ricochet • Only defeated by direct shuriken hits</div>
+          <div class="shop-desc">Splits into 2 smaller golems on defeat (full → half → quarter)</div>
+        </div>
+
+        <div class="shop-item" style="border-color: #9ca3af;">
+          <div class="shop-header">
+            <div class="shop-name">⚙️ Metal Variants</div>
+            <div class="shop-cost" style="color: #e74c3c;">Rare</div>
+          </div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shuriken damage • Appears on any enemy type</div>
+        </div>
       </div>
-      <div class="shop-desc">
-       Basic enemy • Defeated by shurikens
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #9b59b6;">
-      <div class="shop-header">
-       <div class="shop-name">
-        🦇 Bat
-       </div>
-       <div class="shop-cost" style="color: #e74c3c;">
-        Speed: Fast
-       </div>
-      </div>
-      <div class="shop-desc">
-       Spawns in groups • Low health • Quick attacks
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #3498db;">
-      <div class="shop-header">
-       <div class="shop-name">
-        👻 Ghost
-       </div>
-       <div class="shop-cost" style="color: #2ecc71;">
-        Speed: Slow
-       </div>
-      </div>
-      <div class="shop-desc">
-       Moves side-to-side • High health • Phasing movement
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #8b00ff;">
-      <div class="shop-header">
-       <div class="shop-name">
-        👁️ Eye
-       </div>
-       <div class="shop-cost" style="color: #2ecc71;">
-        Speed: Slow
-       </div>
-      </div>
-      <div class="shop-desc">
-       Teleports every 3 seconds • High health • Unpredictable
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #f8f8f0;">
-      <div class="shop-header">
-       <div class="shop-name">
-        💀 Skeleton Archer
-       </div>
-       <div class="shop-cost" style="color: #f39c12;">
-        Speed: Medium
-       </div>
-      </div>
-      <div class="shop-desc">
-       Ranged attacker • Shoots arrows • Keeps distance
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #5d4e37;">
-      <div class="shop-header">
-       <div class="shop-name">
-        🗿 Mud Golem
-       </div>
-       <div class="shop-cost" style="color: #27ae60;">
-        Speed: Very Slow
-       </div>
-      </div>
-      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
-       ⚠️ IMMUNE to shurikens • Only defeated by shadow traps
-      </div>
-      <div class="shop-desc">
-       Throws mud at enemies every 5s to double their health
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #3e2723;">
-      <div class="shop-header">
-       <div class="shop-name">
-        🌳 Tree Golem
-       </div>
-       <div class="shop-cost" style="color: #27ae60;">
-        Speed: Very Slow
-       </div>
-      </div>
-      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
-       ⚠️ IMMUNE to shurikens • Only defeated by blow darts
-      </div>
-      <div class="shop-desc">
-       Moves in straight lines • Spawns root spikes that block shurikens
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #616161;">
-      <div class="shop-header">
-       <div class="shop-name">
-        💨 Smoke Golem
-       </div>
-       <div class="shop-cost" style="color: #f39c12;">
-        Speed: Medium
-       </div>
-      </div>
-      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
-       ⚠️ IMMUNE to shurikens • Only defeated by smoke bombs
-      </div>
-      <div class="shop-desc">
-       Leaves smoke trail that buffs nearby enemies (+50% health &amp; speed)
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #d32f2f;">
-      <div class="shop-header">
-       <div class="shop-name">
-        🔥 Fire Golem
-       </div>
-       <div class="shop-cost" style="color: #f39c12;">
-        Speed: Slow → Fast
-       </div>
-      </div>
-      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
-       ⚠️ IMMUNE to ricochet • Only defeated by direct shuriken hits
-      </div>
-      <div class="shop-desc">
-       Splits into 2 smaller golems on defeat (full → half → quarter)
-      </div>
-     </div>
-     <div class="shop-item" style="border-color: #9ca3af;">
-      <div class="shop-header">
-       <div class="shop-name">
-        ⚙️ Metal Variants
-       </div>
-       <div class="shop-cost" style="color: #e74c3c;">
-        Rare
-       </div>
-      </div>
-      <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">
-       ⚠️ IMMUNE to shuriken damage • Appears on any enemy type
-      </div>
-     </div>
-    </div><button class="btn" id="startGameBtn" style="margin-top: 20px;">Begin Adventure!</button>
-   </div>
+
+      <button class="btn" id="startGameBtn" style="margin-top: 20px;">Begin Adventure!</button>
+    </div>
   </div>
+
   <div id="deathOverlay" class="overlay" role="dialog" aria-modal="true">
-   <div class="box" style="text-align: center;">
-    <h2 class="title" style="font-size: 48px; color: #e74c3c;">💀 Health Lost 💀</h2>
-    <h3 class="title" style="font-size: 36px; color: #e94560; margin-top: 20px;">Game Over</h3>
-   </div>
+    <div class="box" style="text-align: center;">
+      <h2 class="title" style="font-size: 48px; color: #e74c3c;">💀 Health Lost 💀</h2>
+      <h3 class="title" style="font-size: 36px; color: #e94560; margin-top: 20px;">Game Over</h3>
+    </div>
   </div>
+
   <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
-   <div class="box">
-    <h2 class="title">Game Over!</h2>
-    <p class="text">Level: <span id="finalLvl">1</span></p>
-    <p class="text">💀 Monsters Defeated: <span id="finalKills">0</span></p>
-    <p class="text">Time: <span id="finalTime">0</span>s</p>
-    <p class="text">🪙 Earned: <span id="finalCoins">0</span></p>
-    <div style="margin-top: 20px;">
-     <h3 class="title" style="font-size: 24px; color: #d4af37;">🏪 Shop</h3>
-     <p class="text" style="color: #d4af37; font-size: 20px;">🪙 Total: <span id="totalCoins">0</span></p>
-     <div id="shopItems"></div>
-    </div><button class="btn" id="restartBtn">Play Again</button>
-   </div>
+    <div class="box">
+      <h2 class="title">Game Over!</h2>
+      <p class="text">Level: <span id="finalLvl">1</span></p>
+      <p class="text">💀 Monsters Defeated: <span id="finalKills">0</span></p>
+      <p class="text">Time: <span id="finalTime">0</span>s</p>
+      <p class="text">🪙 Earned: <span id="finalCoins">0</span></p>
+      <div style="margin-top: 20px;">
+        <h3 class="title" style="font-size: 24px; color: #d4af37;">🏪 Shop</h3>
+        <p class="text" style="color: #d4af37; font-size: 20px;">🪙 Total: <span id="totalCoins">0</span></p>
+        <div id="shopItems"></div>
+      </div>
+      <button class="btn" id="restartBtn">Play Again</button>
+    </div>
   </div>
+
   <script>
     // Config editable via Canva
     const defaultConfig = {
@@ -416,18 +367,18 @@
     let game = { active: false, paused: false, time: 0, frame: 0 };
     let player = { x: 400, y: 300, hp: 100, maxHp: 100, level: 1, exp: 0, kills: 0 };
     let progress = { totalCoins: 0, runCoins: 0, runNumber: 1, reverseShot: 0, ricochet: 0, smokeStart: 0, smokePriority: 0, smokeCluster: 0, powerupStart: 0, dartStart: 0, dartSpread: 0, dartShatter: 0, shadowStart: 0, shadowUtility: 0, shadowDouble: 0, wallBounce: 0, deaths: 0 };
-    let upgrades = { projSpeed: 5, damage: 1, cooldown: 900, smokeUnlocked: false, smokeDamage: 1, smokeCooldown: 4000, shadowUnlocked: false, shadowDamage: 2, shadowRadius: 100, shadowCooldown: 10000, dartUnlocked: false, dartAmount: 2, dartRange: 180, dartCooldown: 3000 };
+    let upgrades = { projSpeed: 5, damage: 1, cooldown: 900, smokeUnlocked: false, smokeDamage: 1, smokeCooldown: 4000, shadowUnlocked: false, shadowDamage: 2, shadowRadius: 100, shadowCooldown: 10000, dartUnlocked: false, dartAmount: 2, dartRange: 120, dartCooldown: 3000 };
 
     // Entities and IDs
     let nextEnemyId = 1;
     let nextRootId = 1;
-    let enemies = [];        // { id, type, x, y, speed, hp, maxHp, anim, ... , dead? }
-    let bullets = [];        // { x,y,vx,vy,rot,ricochet,bounces,hitIds:number[] }
+    let enemies = [];
+    let bullets = [];
     let enemyArrows = [];
     let shadowTraps = [];
     let darts = [];
     let particles = [];
-    let rootSpikes = [];     // { id, x, y, hp, maxHp, spawnTime }
+    let rootSpikes = [];
 
     // Safety caps
     const MAX_BULLETS = 60;
@@ -445,7 +396,62 @@
     // Quiz state
     let quiz = { index: 0, correct: 0, forPowerup: false, pending: 0, usedQuestions: [] };
 
-    // Helpers
+    // Plant biology questions
+    const organelleQuestions = [
+  {q: "What is the unit of force?", o: ["J", "N", "kg", "m/s"], a: 1},
+  {q: "Which equation relates force, mass, and acceleration?", o: ["Force = Mass ÷ Acceleration", "Force = Mass + Acceleration", "Force = Mass × Acceleration", "Force = Acceleration ÷ Mass"], a: 2},
+  {q: "What does the symbol F represent?", o: ["Frequency", "Fuel", "Force", "Friction"], a: 2},
+  {q: "What happens to an object's acceleration if the force acting on it increases but its mass stays the same?", o: ["It becomes zero.", "It decreases.", "It increases.", "It stays the same."], a: 2},
+  {q: "A shopping trolley has a mass of 20 kg. If it accelerates at 3 m/s², what force is applied?", o: ["600 N", "60 N", "23 N", "17 N"], a: 1},
+  {q: "If the same force is applied to two objects, which one accelerates more?", o: ["Neither accelerates.", "The object with the greater mass.", "Both accelerate equally.", "The object with the smaller mass."], a: 3},
+  {q: "What is the mass of an object if a force of 50 N causes it to accelerate at 5 m/s²?", o: ["25 kg", "250 kg", "10 kg", "55 kg"], a: 2},
+  {q: "A force of 80 N acts on a 20 kg object. What is its acceleration?", o: ["4 m/s²", "0.25 m/s²", "100 m/s²", "2 m/s²"], a: 0},
+  {q: "If the mass of an object doubles while the force stays the same, the acceleration will:", o: ["Stay the same.", "Halve.", "Double.", "Triple."], a: 1},
+  {q: "Which statement is true?", o: ["More force causes greater acceleration if mass stays constant.", "Force and mass are measured in the same units.", "Acceleration is measured in Newtons.", "Heavier objects always accelerate faster."], a: 0},
+  {q: "A force of 24 N is applied to a 6 kg object. What is the acceleration?", o: ["2 m/s²", "30 m/s²", "4 m/s²", "3 m/s²"], a: 2},
+  {q: "An object accelerates at 8 m/s² when a force of 40 N is applied. What is its mass?", o: ["48 kg", "8 kg", "5 kg", "32 kg"], a: 2},
+  {q: "Which of the following would require the greatest force to accelerate?", o: ["A 50 kg person", "A 500 g book", "A 5 kg backpack", "A 2 kg ball"], a: 0},
+  {q: "A 10 kg object experiences a force of 100 N. If the force is increased to 200 N, the acceleration becomes:", o: ["40 m/s²", "20 m/s²", "5 m/s²", "10 m/s²"], a: 1},
+  {q: "Which change would cause the greatest increase in acceleration?", o: ["Doubling the mass.", "Doubling the force.", "Increasing both force and mass equally.", "Halving the force."], a: 1},
+  {q: "A rugby player pushes with a force of 600 N on a scrum. If the opposing force is also 600 N, what is the acceleration?", o: ["Negative acceleration", "Cannot be determined", "Zero acceleration", "Positive acceleration"], a: 2},
+  {q: "A force of 90 N acts on a box with a mass of 30 kg. What is the acceleration?", o: ["27 m/s²", "1 m/s²", "3 m/s²", "2 m/s²"], a: 2},
+  {q: "A 12 kg object accelerates at 5 m/s². What is the applied force?", o: ["72 N", "17 N", "120 N", "60 N"], a: 3},
+  {q: "A car's engine provides a greater driving force while its mass stays constant. The car will:", o: ["Lose mass.", "Accelerate faster.", "Maintain constant speed.", "Slow down."], a: 1},
+  {q: "Two objects experience the same force. Object A has twice the mass of Object B. Compared with Object B, Object A will have:", o: ["Four times the acceleration.", "Half the acceleration.", "The same acceleration.", "Twice the acceleration."], a: 1}
+    ];
+
+    const transportQuestions = [
+  {q: "What is the unit of speed?", o: ["kg", "m/s", "N", "m"], a: 1},
+  {q: "Which formula is correct for speed?", o: ["Speed = Time ÷ Distance", "Speed = Distance × Time", "Speed = Distance ÷ Time", "Speed = Time ÷ Speed"], a: 2},
+  {q: "What does distance measure?", o: ["How fast something moves", "The change in direction", "How far something travels", "The time taken"], a: 2},
+  {q: "A car travels 100 m in 10 s. What is its speed?", o: ["1000 m/s", "10 m/s", "0.1 m/s", "90 m/s"], a: 1},
+  {q: "If time increases while distance stays the same, speed will:", o: ["Increase", "Decrease", "Stay the same", "Become zero"], a: 1},
+  {q: "What is the correct unit for distance?", o: ["m", "s", "m/s", "kg"], a: 0},
+  {q: "A cyclist travels 60 m in 12 s. What is the speed?", o: ["7.2 m/s", "5 m/s", "0.2 m/s", "72 m/s"], a: 1},
+  {q: "Which instrument is used to measure time?", o: ["Thermometer", "Ruler", "Stopwatch", "Spring balance"], a: 2},
+  {q: "A runner moves at 8 m/s for 5 seconds. How far do they travel?", o: ["40 m", "13 m", "3 m", "80 m"], a: 0},
+  {q: "If speed increases, the time taken to travel a fixed distance will:", o: ["Increase", "Decrease", "Stay the same", "Become infinite"], a: 1},
+  {q: "A train travels 300 m in 15 s. What is its speed?", o: ["5 m/s", "20 m/s", "15 m/s", "200 m/s"], a: 1},
+  {q: "What is the correct rearrangement of speed = distance ÷ time?", o: ["Distance = speed ÷ time", "Time = speed ÷ distance", "Distance = speed × time", "Time = distance × speed"], a: 2},
+  {q: "A swimmer travels 50 m in 25 s. What is the speed?", o: ["2 m/s", "75 m/s", "1 m/s", "0.5 m/s"], a: 0},
+  {q: "What happens if distance doubles and time stays the same?", o: ["Speed halves", "Speed doubles", "Speed stays the same", "Speed becomes zero"], a: 1},
+  {q: "A car travels at 20 m/s for 10 s. How far does it go?", o: ["200 m", "30 m", "2 m", "100 m"], a: 0},
+  {q: "Which of the following is NOT a unit of speed?", o: ["km/h", "m/s", "km", "mph"], a: 2},
+  {q: "A student walks 120 m in 30 s. What is their speed?", o: ["4 m/s", "3 m/s", "30 m/s", "150 m/s"], a: 0},
+  {q: "If a vehicle travels 200 m in 40 s, what is its speed?", o: ["10 m/s", "2 m/s", "5 m/s", "8 m/s"], a: 2},
+  {q: "What is the formula for distance?", o: ["Distance = speed × time", "Distance = speed ÷ time", "Distance = time ÷ speed", "Distance = time × distance"], a: 0},
+  {q: "A boat travels 500 m in 50 s. What is its speed?", o: ["10 m/s", "100 m/s", "5 m/s", "0.1 m/s"], a: 0},
+  {q: "If time is halved and distance stays the same, speed:", o: ["Doubles", "Halves", "Stays the same", "Becomes zero"], a: 0},
+  {q: "A car moves at 15 m/s for 20 s. Distance travelled is:", o: ["300 m", "35 m", "75 m", "150 m"], a: 0},
+  {q: "Which is the correct formula for time?", o: ["Time = speed × distance", "Time = distance ÷ speed", "Time = speed ÷ distance", "Time = distance × speed"], a: 1},
+  {q: "A runner covers 400 m in 80 s. What is the speed?", o: ["8 m/s", "4 m/s", "5 m/s", "320 m/s"], a: 2},
+  {q: "If speed is 0 m/s, what does this mean?", o: ["Object is accelerating", "Object is moving fast", "Object is stationary", "Object is changing direction"], a: 2}
+    ];
+
+    let questions = [...organelleQuestions]; // Default to organelles
+    let selectedQuestionBank = 'organelles';
+
+    // Helper functions
     function norm(dx, dy) {
       const d = Math.hypot(dx, dy);
       if (d === 0) return { nx: 0, ny: 0, d: 0 };
@@ -457,42 +463,6 @@
         particles.splice(0, removeCount);
       }
     }
-
-    const questions = [
-      // Energy Questions (10)
-      {q: "What is the SI unit for energy?", o: ["Watt", "Joule", "Newton", "Volt"], a: 1},
-      {q: "Which form of energy is stored in a stretched spring?", o: ["Kinetic energy", "Thermal energy", "Elastic potential energy", "Chemical energy"], a: 2},
-      {q: "What happens to kinetic energy when an object's speed doubles?", o: ["Doubles", "Triples", "Quadruples", "Stays the same"], a: 2},
-      {q: "Which energy transformation occurs in a solar panel?", o: ["Chemical to electrical", "Light to electrical", "Thermal to kinetic", "Nuclear to thermal"], a: 1},
-      {q: "What is the law of conservation of energy?", o: ["Energy can be created", "Energy can be destroyed", "Energy cannot be created or destroyed", "Energy always increases"], a: 2},
-      {q: "Which type of energy does a moving car possess?", o: ["Potential energy", "Kinetic energy", "Chemical energy", "Nuclear energy"], a: 1},
-      {q: "What energy transformation occurs when you eat food?", o: ["Chemical to thermal and kinetic", "Kinetic to potential", "Electrical to chemical", "Nuclear to thermal"], a: 0},
-      {q: "Which factor does NOT affect gravitational potential energy?", o: ["Mass", "Height", "Gravity", "Speed"], a: 3},
-      {q: "What is thermal energy?", o: ["Energy of motion", "Energy due to temperature", "Energy stored in bonds", "Energy of position"], a: 1},
-      {q: "Which energy source is renewable?", o: ["Coal", "Natural gas", "Solar", "Uranium"], a: 2},
-      
-      // Wave Questions (20)
-      {q: "What is the distance between two consecutive crests called?", o: ["Amplitude", "Frequency", "Wavelength", "Period"], a: 2},
-      {q: "What is the maximum displacement from equilibrium called?", o: ["Wavelength", "Frequency", "Amplitude", "Period"], a: 2},
-      {q: "Which type of wave requires a medium to travel?", o: ["Light waves", "Radio waves", "Sound waves", "X-rays"], a: 2},
-      {q: "What is the unit for frequency?", o: ["Metres", "Seconds", "Hertz", "Joules"], a: 2},
-      {q: "What happens when a wave hits a barrier and bounces back?", o: ["Refraction", "Diffraction", "Reflection", "Interference"], a: 2},
-      {q: "Which electromagnetic wave has the longest wavelength?", o: ["Gamma rays", "X-rays", "Radio waves", "Ultraviolet"], a: 2},
-      {q: "What is the relationship between frequency and wavelength?", o: ["Directly proportional", "Inversely proportional", "No relationship", "Exponentially related"], a: 1},
-      {q: "What causes refraction of light?", o: ["Change in medium", "Hitting a mirror", "Passing through a slit", "Wave interference"], a: 0},
-      {q: "Which wave property determines the pitch of sound?", o: ["Amplitude", "Wavelength", "Frequency", "Speed"], a: 2},
-      {q: "What is the speed of light in a vacuum?", o: ["3 × 10⁶ m/s", "3 × 10⁸ m/s", "3 × 10¹⁰ m/s", "3 × 10¹² m/s"], a: 1},
-      {q: "Which wave behaviour occurs when waves pass through a narrow gap?", o: ["Reflection", "Refraction", "Diffraction", "Absorption"], a: 2},
-      {q: "What type of wave is sound?", o: ["Transverse", "Longitudinal", "Electromagnetic", "Standing"], a: 1},
-      {q: "Which colour of visible light has the highest frequency?", o: ["Red", "Green", "Blue", "Violet"], a: 3},
-      {q: "What is the period of a wave?", o: ["Distance between crests", "Maximum displacement", "Time for one complete cycle", "Number of cycles per second"], a: 2},
-      {q: "Which electromagnetic wave is used in medical imaging?", o: ["Radio waves", "Microwaves", "X-rays", "Infrared"], a: 2},
-      {q: "What happens when two waves meet and combine?", o: ["Reflection", "Refraction", "Interference", "Diffraction"], a: 2},
-      {q: "Which wave has the highest energy in the electromagnetic spectrum?", o: ["Radio waves", "Visible light", "X-rays", "Gamma rays"], a: 3},
-      {q: "What is the Doppler effect?", o: ["Bending of waves", "Change in frequency due to motion", "Wave interference", "Wave reflection"], a: 1},
-      {q: "Which medium allows sound to travel fastest?", o: ["Air", "Water", "Steel", "Vacuum"], a: 2},
-      {q: "What determines the loudness of sound?", o: ["Frequency", "Wavelength", "Amplitude", "Speed"], a: 2}
-    ];
 
     function drawBackground() {
       ctx.fillStyle = '#2a2a3e';
@@ -641,7 +611,6 @@
     }
 
     function drawEnemy(e) {
-      // Draw glow effect if enemy is smoke buffed
       if (e.smokeBuffed) {
         const pulse = Math.sin(game.frame * 0.1) * 0.3 + 0.7;
         ctx.globalAlpha = pulse * 0.4;
@@ -681,7 +650,6 @@
       const bodyWidth = 44 * squish;
       const bodyHeight = 10 / squish;
       
-      // Metal colors if metal variant
       const darkColor = e.metal ? '#6b7280' : '#27ae60';
       const mainColor = e.metal ? '#9ca3af' : '#2ecc71';
       const lightColor = e.metal ? '#d1d5db' : '#34eb77';
@@ -697,15 +665,13 @@
       ctx.fillStyle = lightColor;
       ctx.fillRect(e.x - mainWidth/2 + 3 + wobble, e.y - 14 - bounce, mainWidth - 6, 3);
 
-      // Single large eye in center
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(e.x - 8 + wobble, e.y - 10 - bounce, 16, 12);
 
-      // Calculate pupil position based on player direction
       const dx = player.x - e.x;
       const dy = player.y - e.y;
       const distance = Math.hypot(dx, dy);
-      const maxOffset = 3; // How far the pupil can move from center
+      const maxOffset = 3;
       
       let pupilOffsetX = 0;
       let pupilOffsetY = 0;
@@ -714,11 +680,9 @@
         pupilOffsetY = (dy / distance) * maxOffset;
       }
 
-      // Black pupil that follows player
       ctx.fillStyle = '#000000';
       ctx.fillRect(e.x - 3 + wobble + pupilOffsetX, e.y - 7 - bounce + pupilOffsetY, 6, 6);
 
-      // Small white highlight
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(e.x - 1 + wobble + pupilOffsetX, e.y - 6 - bounce + pupilOffsetY, 2, 2);
     }
@@ -812,7 +776,6 @@
       ctx.fillRect(e.x - 16, e.y + 12, 32, 6);
 
       const boneColor = e.metal ? '#9ca3af' : '#f8f8f0';
-      const ribColor = e.metal ? '#6b7280' : '#e8e8d8';
       
       ctx.fillStyle = boneColor;
       ctx.fillRect(e.x - 10, e.y - 24 + breathe, 20, 16);
@@ -847,7 +810,7 @@
       ctx.fillStyle = boneColor;
       ctx.fillRect(e.x - 12, e.y - 6 + breathe, 24, 16);
       
-      ctx.fillStyle = ribColor;
+      ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(e.x - 10, e.y - 4 + breathe, 20, 1);
       ctx.fillRect(e.x - 10, e.y - 1 + breathe, 20, 1);
       ctx.fillRect(e.x - 10, e.y + 2 + breathe, 20, 1);
@@ -886,56 +849,45 @@
       const breathe = Math.sin(e.anim * 0.02) * 1;
       const rumble = Math.sin(e.anim * 0.15) * 0.5;
 
-      // Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
 
-      // Main body - large and imposing
-      ctx.fillStyle = '#5d4e37'; // Dark mud brown
+      ctx.fillStyle = '#5d4e37';
       ctx.fillRect(e.x - 20 + rumble, e.y - 20 + breathe, 40, 38);
 
-      // Lighter mud texture
       ctx.fillStyle = '#7d6e47';
       ctx.fillRect(e.x - 18 + rumble, e.y - 18 + breathe, 36, 34);
 
-      // Mud drips
       ctx.fillStyle = '#4d3e27';
       ctx.fillRect(e.x - 15 + rumble, e.y + 18 + breathe, 8, 6);
       ctx.fillRect(e.x + 7 + rumble, e.y + 18 + breathe, 8, 6);
       ctx.fillRect(e.x - 2 + rumble, e.y + 18 + breathe, 4, 8);
 
-      // Rock chunks embedded in mud
       ctx.fillStyle = '#6b6b6b';
       ctx.fillRect(e.x - 12 + rumble, e.y - 10 + breathe, 6, 6);
       ctx.fillRect(e.x + 6 + rumble, e.y - 14 + breathe, 5, 5);
       ctx.fillRect(e.x - 8 + rumble, e.y + 4 + breathe, 4, 4);
 
-      // Glowing core (vulnerable to shadow magic)
       const pulseSize = 2 + Math.sin(e.anim * 0.1) * 1;
-      ctx.fillStyle = '#8b4789'; // Purple glow
+      ctx.fillStyle = '#8b4789';
       ctx.fillRect(e.x - pulseSize + rumble, e.y - 2 + breathe, pulseSize * 2, pulseSize * 2);
 
-      // Eyes - menacing
       ctx.fillStyle = '#ff6b35';
       ctx.fillRect(e.x - 10 + rumble, e.y - 12 + breathe, 6, 8);
       ctx.fillRect(e.x + 4 + rumble, e.y - 12 + breathe, 6, 8);
 
-      // Darker pupils
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(e.x - 8 + rumble, e.y - 10 + breathe, 2, 4);
       ctx.fillRect(e.x + 6 + rumble, e.y - 10 + breathe, 2, 4);
 
-      // Arms - thick and heavy
       ctx.fillStyle = '#5d4e37';
       ctx.fillRect(e.x - 28 + rumble, e.y - 8 + breathe, 8, 18);
       ctx.fillRect(e.x + 20 + rumble, e.y - 8 + breathe, 8, 18);
 
-      // Hands
       ctx.fillStyle = '#4d3e27';
       ctx.fillRect(e.x - 30 + rumble, e.y + 10 + breathe, 10, 8);
       ctx.fillRect(e.x + 20 + rumble, e.y + 10 + breathe, 10, 8);
 
-      // Legs - stumpy
       ctx.fillStyle = '#5d4e37';
       ctx.fillRect(e.x - 12 + rumble, e.y + 18 + breathe, 8, 10);
       ctx.fillRect(e.x + 4 + rumble, e.y + 18 + breathe, 8, 10);
@@ -945,45 +897,36 @@
       const breathe = Math.sin(e.anim * 0.02) * 1;
       const sway = Math.sin(e.anim * 0.04) * 2;
 
-      // Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
 
-      // Trunk - main body
-      ctx.fillStyle = '#3e2723'; // Dark brown trunk
+      ctx.fillStyle = '#3e2723';
       ctx.fillRect(e.x - 18 + sway, e.y - 18 + breathe, 36, 36);
 
-      // Wood texture
       ctx.fillStyle = '#5d4037';
       ctx.fillRect(e.x - 16 + sway, e.y - 16 + breathe, 32, 32);
 
-      // Wood rings
       ctx.fillStyle = '#4e342e';
       ctx.fillRect(e.x - 8 + sway, e.y - 10 + breathe, 16, 3);
       ctx.fillRect(e.x - 10 + sway, e.y + breathe, 20, 3);
       ctx.fillRect(e.x - 6 + sway, e.y + 8 + breathe, 12, 3);
 
-      // Glowing core (vulnerable to darts)
       const pulseSize = 2 + Math.sin(e.anim * 0.1) * 1;
-      ctx.fillStyle = '#8bc34a'; // Green nature glow
+      ctx.fillStyle = '#8bc34a';
       ctx.fillRect(e.x - pulseSize + sway, e.y - 2 + breathe, pulseSize * 2, pulseSize * 2);
 
-      // Eyes - wooden knots
       ctx.fillStyle = '#1b5e20';
       ctx.fillRect(e.x - 10 + sway, e.y - 12 + breathe, 6, 8);
       ctx.fillRect(e.x + 4 + sway, e.y - 12 + breathe, 6, 8);
 
-      // Branch arms
       ctx.fillStyle = '#3e2723';
       ctx.fillRect(e.x - 26 + sway, e.y - 8 + breathe, 8, 16);
       ctx.fillRect(e.x + 18 + sway, e.y - 8 + breathe, 8, 16);
 
-      // Leaves at end of branches
       ctx.fillStyle = '#4caf50';
       ctx.fillRect(e.x - 30 + sway, e.y - 6 + breathe, 8, 8);
       ctx.fillRect(e.x + 22 + sway, e.y - 6 + breathe, 8, 8);
 
-      // Root legs
       ctx.fillStyle = '#3e2723';
       ctx.fillRect(e.x - 14 + sway, e.y + 18 + breathe, 10, 10);
       ctx.fillRect(e.x + 4 + sway, e.y + 18 + breathe, 10, 10);
@@ -993,32 +936,27 @@
       const breathe = Math.sin(e.anim * 0.02) * 1;
       const float = Math.sin(e.anim * 0.04) * 3;
 
-      // Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
 
-      // Smoke body - ethereal
       const alpha = 0.7 + Math.sin(e.anim * 0.05) * 0.2;
       ctx.globalAlpha = alpha;
 
-      ctx.fillStyle = '#616161'; // Dark gray smoke
+      ctx.fillStyle = '#616161';
       ctx.fillRect(e.x - 20, e.y - 20 + breathe + float, 40, 38);
 
-      ctx.fillStyle = '#9e9e9e'; // Lighter smoke
+      ctx.fillStyle = '#9e9e9e';
       ctx.fillRect(e.x - 18, e.y - 18 + breathe + float, 36, 34);
 
-      // Smoke wisps
       ctx.fillStyle = '#757575';
       ctx.fillRect(e.x - 22, e.y - 15 + breathe + float, 8, 20);
       ctx.fillRect(e.x + 14, e.y - 15 + breathe + float, 8, 20);
       ctx.fillRect(e.x - 4, e.y + 18 + breathe + float, 8, 12);
 
-      // Glowing core (vulnerable to smoke bomb)
       const pulseSize = 2 + Math.sin(e.anim * 0.1) * 1;
-      ctx.fillStyle = '#bdbdbd'; // Light gray glow
+      ctx.fillStyle = '#bdbdbd';
       ctx.fillRect(e.x - pulseSize, e.y - 2 + breathe + float, pulseSize * 2, pulseSize * 2);
 
-      // Eyes - glowing through smoke
       ctx.fillStyle = '#ffeb3b';
       ctx.fillRect(e.x - 10, e.y - 12 + breathe + float, 6, 8);
       ctx.fillRect(e.x + 4, e.y - 12 + breathe + float, 6, 8);
@@ -1037,38 +975,32 @@
       const width = 40 * scale;
       const height = 38 * scale;
 
-      // Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24 * scale, e.y + 18 * scale, 48 * scale, 8 * scale);
 
-      // Fire body - animated
-      ctx.fillStyle = '#b71c1c'; // Dark red core
+      ctx.fillStyle = '#b71c1c';
       ctx.fillRect(e.x - width/2 + flicker, e.y - height/2 + breathe, width, height);
 
-      ctx.fillStyle = '#d32f2f'; // Red
+      ctx.fillStyle = '#d32f2f';
       ctx.fillRect(e.x - width/2 + 2 * scale + flicker, e.y - height/2 + 2 * scale + breathe, width - 4 * scale, height - 4 * scale);
 
-      ctx.fillStyle = '#f44336'; // Bright red
+      ctx.fillStyle = '#f44336';
       ctx.fillRect(e.x - width/2 + 4 * scale + flicker, e.y - height/2 + 4 * scale + breathe, width - 8 * scale, height - 8 * scale);
 
-      // Flame tips
-      ctx.fillStyle = '#ff9800'; // Orange
+      ctx.fillStyle = '#ff9800';
       ctx.fillRect(e.x - 8 * scale + flicker, e.y - height/2 - 4 * scale + breathe, 4 * scale, 6 * scale);
       ctx.fillRect(e.x + flicker, e.y - height/2 - 5 * scale + breathe, 4 * scale, 7 * scale);
       ctx.fillRect(e.x + 4 * scale + flicker, e.y - height/2 - 3 * scale + breathe, 4 * scale, 5 * scale);
 
-      // Eyes - burning
       ctx.fillStyle = '#ffeb3b';
       ctx.fillRect(e.x - 10 * scale + flicker, e.y - 12 * scale + breathe, 6 * scale, 8 * scale);
       ctx.fillRect(e.x + 4 * scale + flicker, e.y - 12 * scale + breathe, 6 * scale, 8 * scale);
 
-      // White hot pupils
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(e.x - 8 * scale + flicker, e.y - 10 * scale + breathe, 2 * scale, 4 * scale);
       ctx.fillRect(e.x + 6 * scale + flicker, e.y - 10 * scale + breathe, 2 * scale, 4 * scale);
     }
 
-    // SHURIKEN projectile rendering
     function drawBullet(b) {
       ctx.save();
       ctx.translate(b.x, b.y);
@@ -1157,7 +1089,6 @@
       clampParticles();
     }
 
-    // Spawning
     function spawnEnemy() {
       const side = Math.floor(Math.random() * 4);
       let x, y;
@@ -1170,14 +1101,11 @@
       const baseHp = Math.floor(player.level / 3) + 1;
       const speedMultiplier = Math.pow(0.75, progress.runNumber - 1);
 
-      // Metal variant chance: 1% base + 1% per death (max 10%)
       const metalChance = Math.min(0.01 + (progress.deaths * 0.01), 0.10);
       const isMetal = Math.random() < metalChance;
 
-      // Golem spawn chance: 1% per player level (max 10%)
       const golemChance = Math.min(player.level * 0.01, 0.10);
       if (Math.random() < golemChance) {
-        // Choose random golem type - 25% chance each
         const golemRoll = Math.random();
         if (golemRoll < 0.25) {
           enemies.push({ id: nextEnemyId++, type: 'golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, lastAbility: Date.now() });
@@ -1216,7 +1144,6 @@
       if (enemies.length < target && (game.frame % 5 === 0)) spawnEnemy();
     }
 
-    // Shooting
     function shoot() {
       const now = Date.now();
       const dynamicCooldown = Math.min(upgrades.cooldown * 1.2, upgrades.cooldown + 120);
@@ -1241,11 +1168,9 @@
       if (enemies.length === 0) return;
       lastSmoke = now;
 
-      // Priority shot: chance to target closest enemy
       let target;
       const priorityChance = progress.smokePriority * 0.05;
       if (Math.random() < priorityChance) {
-        // Find closest enemy
         let minDist = Infinity;
         for (const e of enemies) {
           if (e.dead) continue;
@@ -1256,13 +1181,11 @@
           }
         }
       } else {
-        // Random target
         target = enemies[Math.floor(Math.random() * enemies.length)];
       }
       
       if (!target || target.dead) return;
       
-      // Smoke golem defeated by smoke bomb
       if (target.type === 'smoke_golem') {
         markEnemyDead(target);
         for (let i = 0; i < 24; i++) {
@@ -1270,7 +1193,6 @@
         }
         clampParticles();
         
-        // Cluster shot on defeat
         if (progress.smokeCluster > 0) {
           for (let i = 0; i < progress.smokeCluster; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -1278,7 +1200,6 @@
             const clusterX = target.x + Math.cos(angle) * distance;
             const clusterY = target.y + Math.sin(angle) * distance;
             
-            // Find nearby enemy for cluster bomb
             let nearestCluster = null;
             let minDist = Infinity;
             for (const e of enemies) {
@@ -1294,7 +1215,6 @@
               const clusterDamage = Math.ceil(upgrades.smokeDamage / 2);
               nearestCluster.hp -= clusterDamage;
               
-              // Cluster particles
               for (let j = 0; j < 8; j++) {
                 particles.push({ x: nearestCluster.x + (Math.random() - 0.5) * 30, y: nearestCluster.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 5 + 3, color: Math.random() > 0.5 ? '#999' : '#bbb', start: now, life: 600 });
               }
@@ -1309,7 +1229,6 @@
         return;
       }
       
-      // Smoke doesn't work on other golems
       if (target.type === 'golem' || target.type === 'tree_golem' || target.type === 'fire_golem') return;
       
       target.hp -= upgrades.smokeDamage;
@@ -1320,7 +1239,6 @@
       clampParticles();
 
       if (target.hp <= 0 && !target.dead) {
-        // Cluster shot on defeat
         if (progress.smokeCluster > 0) {
           for (let i = 0; i < progress.smokeCluster; i++) {
             const angle = Math.random() * Math.PI * 2;
@@ -1328,7 +1246,6 @@
             const clusterX = target.x + Math.cos(angle) * distance;
             const clusterY = target.y + Math.sin(angle) * distance;
             
-            // Find nearby enemy for cluster bomb
             let nearestCluster = null;
             let minDist = Infinity;
             for (const e of enemies) {
@@ -1344,7 +1261,6 @@
               const clusterDamage = Math.ceil(upgrades.smokeDamage / 2);
               nearestCluster.hp -= clusterDamage;
               
-              // Cluster particles
               for (let j = 0; j < 8; j++) {
                 particles.push({ x: nearestCluster.x + (Math.random() - 0.5) * 30, y: nearestCluster.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 5 + 3, color: Math.random() > 0.5 ? '#999' : '#bbb', start: now, life: 600 });
               }
@@ -1378,13 +1294,11 @@
         if (darts.length >= MAX_DARTS) break;
         const dir = shuffled[i];
         
-        // Dart spread: fire multiple darts in tight cluster in same direction
         const spreadCount = 1 + progress.dartSpread;
         for (let s = 0; s < spreadCount; s++) {
           if (darts.length >= MAX_DARTS) break;
           
-          // Add small angle variation for spread
-          const spreadAngle = (s - (spreadCount - 1) / 2) * 0.15; // ±0.15 radians per dart
+          const spreadAngle = (s - (spreadCount - 1) / 2) * 0.15;
           const baseAngle = Math.atan2(dir.y, dir.x);
           const finalAngle = baseAngle + spreadAngle;
           
@@ -1396,7 +1310,7 @@
             startX: player.x, 
             startY: player.y, 
             maxRange: upgrades.dartRange,
-            hitIds: [] // Track which enemies this dart has hit (for shatter)
+            hitIds: []
           });
         }
       }
@@ -1413,7 +1327,6 @@
       return nearest;
     }
 
-    // Mark-and-sweep enemy deletion to avoid mid-loop splice crashes
     const deadQueue = [];
     function markEnemyDead(e) {
       if (e.dead) return;
@@ -1429,10 +1342,8 @@
       const deadSet = new Set(deadQueue);
       deadQueue.length = 0;
 
-      // Remove dead enemies
       enemies = enemies.filter(e => !deadSet.has(e.id));
 
-      // Clean bullet hitId lists to avoid growth
       for (const b of bullets) {
         b.hitIds = b.hitIds.filter(id => !deadSet.has(id));
       }
@@ -1454,7 +1365,6 @@
         if (upgrades.smokeUnlocked) throwSmoke();
         if (upgrades.dartUnlocked) shootDart();
 
-        // Move bullets
         for (let i = bullets.length - 1; i >= 0; i--) {
           const b = bullets[i];
           b.x += b.vx; b.y += b.vy;
@@ -1468,14 +1378,11 @@
           if (!bounced && (b.x < -50 || b.x > 850 || b.y < -50 || b.y > 650)) bullets.splice(i, 1);
         }
 
-        // Shadow traps
         for (let i = shadowTraps.length - 1; i >= 0; i--) {
           const trap = shadowTraps[i];
           const now = Date.now();
           
-          // Remove trap after 20 seconds
           if (now - trap.placed >= 20000) {
-            // Fade out particles
             for (let k = 0; k < 12; k++) {
               const angle = Math.random() * Math.PI * 2;
               const speed = Math.random() * 2;
@@ -1488,7 +1395,6 @@
           if (!trap.activated && now - trap.placed >= 500) trap.activated = true;
 
           if (trap.activated) {
-            // Utility trap: apply slow instead of damage
             const isUtilityTrap = progress.shadowUtility > 0;
             const slowEffect = isUtilityTrap ? (progress.shadowUtility * 0.05) : 0;
             
@@ -1499,19 +1405,15 @@
               if (e.dead) continue;
               const d = Math.hypot(e.x - trap.x, e.y - trap.y);
               if (d < 45) {
-                // Golem is instantly defeated by shadow trap (even utility trap with 0 damage)
                 if (e.type === 'golem') {
                   markEnemyDead(e);
                   shouldExplode = true;
                   any = true;
                 } else if (isUtilityTrap) {
-                  // Utility trap: apply slow and bonus damage per upgrade level
                   e.speed *= (1 - slowEffect);
-                  // Bonus damage: enemies take +1 damage per utility level when hit while on trap
                   e.hp -= progress.shadowUtility;
                   shouldExplode = true;
                 } else {
-                  // Regular trap: damage
                   e.hp -= upgrades.shadowDamage;
                   shouldExplode = true;
                   
@@ -1519,7 +1421,6 @@
                     if (other === e || other.dead) continue;
                     const od = Math.hypot(other.x - trap.x, other.y - trap.y);
                     if (od < upgrades.shadowRadius * 1.1) {
-                      // Golem is defeated by any shadow trap explosion
                       if (other.type === 'golem') {
                         markEnemyDead(other);
                       } else {
@@ -1540,7 +1441,6 @@
               }
               clampParticles();
               
-              // Double trap: chance to respawn immediately
               const doubleTrapChance = progress.shadowDouble * 0.05;
               if (Math.random() < doubleTrapChance) {
                 shadowTraps[i] = { x: trap.x, y: trap.y, placed: now, activated: false };
@@ -1555,12 +1455,10 @@
           }
         }
 
-        // Apply smoke golem buffs
         for (const e of enemies) {
           if (e.dead) continue;
-          e.smokeBuffed = false; // Reset buff each frame
+          e.smokeBuffed = false;
           
-          // Check if enemy is in any smoke golem's trail
           if (e.type !== 'smoke_golem') {
             for (const sg of enemies) {
               if (sg.dead || sg.type !== 'smoke_golem' || !sg.smokeTrail) continue;
@@ -1576,14 +1474,12 @@
           }
         }
         
-        // Enemies move + touch damage
         for (const e of enemies) {
           if (e.dead) continue;
           e.anim += 0.08;
 
           const v = norm(player.x - e.x, player.y - e.y);
           
-          // Apply smoke buff to speed
           let effectiveSpeed = e.speed;
           if (e.smokeBuffed) {
             effectiveSpeed *= 1.5;
@@ -1599,10 +1495,7 @@
           } else if (e.type === 'eye') {
             const now = Date.now();
             if (now - e.lastWarp > 3000) {
-              // Calculate current distance from player
               const currentDist = Math.hypot(e.x - player.x, e.y - player.y);
-              
-              // Teleport to same distance in random direction
               const angle = Math.random() * Math.PI * 2;
               e.x = Math.max(50, Math.min(750, player.x + Math.cos(angle) * currentDist));
               e.y = Math.max(50, Math.min(550, player.y + Math.sin(angle) * currentDist));
@@ -1625,18 +1518,15 @@
             }
           } else if (e.type === 'golem') {
             e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed;
-            // Mud golem throws mud at enemies every 5 seconds
             const now = Date.now();
             if (now - e.lastAbility > 5000) {
               e.lastAbility = now;
               const otherEnemies = enemies.filter(other => other !== e && !other.dead && other.type !== 'golem' && other.type !== 'tree_golem' && other.type !== 'smoke_golem' && other.type !== 'fire_golem');
               if (otherEnemies.length > 0) {
                 const target = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
-                // Apply smoke buff health bonus if in smoke
-                const healthMultiplier = target.smokeBuffed ? 3 : 2; // 2x from mud, +50% from smoke = 3x total
+                const healthMultiplier = target.smokeBuffed ? 3 : 2;
                 target.hp *= healthMultiplier;
                 target.maxHp *= healthMultiplier;
-                // Mud splash particles
                 for (let k = 0; k < 12; k++) {
                   const angle = Math.random() * Math.PI * 2;
                   const speed = Math.random() * 2 + 1;
@@ -1646,18 +1536,16 @@
               }
             }
           } else if (e.type === 'tree_golem') {
-            // Tree golem spawns only in cardinal/intercardinal directions
             const angle = Math.atan2(v.ny, v.nx);
             const snapAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
             const snapX = Math.cos(snapAngle);
             const snapY = Math.sin(snapAngle);
             e.x += snapX * effectiveSpeed; e.y += snapY * effectiveSpeed;
             
-            // Stop periodically to summon root spikes
             const now = Date.now();
             if (now - e.lastAbility > 5000) {
               e.lastAbility = now;
-              const numRoots = Math.floor(Math.random() * 4) + 2; // 2-5 roots
+              const numRoots = Math.floor(Math.random() * 4) + 2;
               for (let i = 0; i < numRoots; i++) {
                 const offsetX = (Math.random() - 0.5) * 60;
                 const offsetY = (Math.random() - 0.5) * 60;
@@ -1673,7 +1561,6 @@
               }
             }
           } else if (e.type === 'smoke_golem') {
-            // Smoke golem moves like ghost
             e.sineOffset = (e.sineOffset || 0) + 0.025;
             const perpX = v.d === 0 ? 0 : -v.ny;
             const perpY = v.d === 0 ? 0 : v.nx;
@@ -1681,11 +1568,9 @@
             e.x += v.nx * e.speed + perpX * sineWave * 0.05;
             e.y += v.ny * e.speed + perpY * sineWave * 0.05;
             
-            // Leave smoke trail
             const now = Date.now();
             if (game.frame % 5 === 0) {
               e.smokeTrail.push({ x: e.x, y: e.y, created: now });
-              // Remove old smoke (lasts 4.5 seconds - 50% longer)
               e.smokeTrail = e.smokeTrail.filter(s => now - s.created < 4500);
             }
           } else if (e.type === 'fire_golem') {
@@ -1694,7 +1579,6 @@
             e.x += v.nx * e.speed; e.y += v.ny * e.speed;
           }
 
-          // Player collision damage - check if enemy is already dead before processing
           if (v.d < 60 && !e.dead) {
             let damage = 10;
             if (e.type === 'bat') damage = 5;
@@ -1717,11 +1601,9 @@
           }
         }
 
-        // Bullet collisions
         for (let j = bullets.length - 1; j >= 0; j--) {
           const b = bullets[j];
           
-          // Check root spike collisions first
           for (let r = rootSpikes.length - 1; r >= 0; r--) {
             const root = rootSpikes[r];
             const dist = Math.hypot(b.x - root.x, b.y - root.y);
@@ -1749,10 +1631,8 @@
             if (b.hitIds.includes(e.id)) continue;
             const dist = Math.hypot(b.x - e.x, b.y - e.y);
             if (Number.isFinite(dist) && dist < 40) {
-              // Golem absorbs shuriken completely - no damage, no ricochet
               if (e.type === 'golem' || e.type === 'tree_golem' || e.type === 'smoke_golem') {
                 bullets.splice(j, 1);
-                // Create splash particles
                 const now = Date.now();
                 let color = '#5d4e37';
                 if (e.type === 'tree_golem') color = '#5d4037';
@@ -1766,10 +1646,8 @@
                 break;
               }
               
-              // Fire golem - only direct hits, stops ricochet
               if (e.type === 'fire_golem') {
                 if (b.ricochet < (progress.ricochet || 0)) {
-                  // This is a ricochet shot - fire golem immune
                   bullets.splice(j, 1);
                   const now = Date.now();
                   for (let k = 0; k < 8; k++) {
@@ -1780,12 +1658,9 @@
                   clampParticles();
                   break;
                 } else {
-                  // Direct hit - defeats fire golem
                   e.hp -= upgrades.damage;
                   if (e.hp <= 0) {
-                    // Fire golem splits
                     if (e.size === 'full') {
-                      // Spawn 2 half-size golems
                       for (let s = 0; s < 2; s++) {
                         const angle = (Math.PI * 2 * s) / 2 + (Math.random() - 0.5) * 0.5;
                         const dist = 50;
@@ -1802,7 +1677,6 @@
                         });
                       }
                     } else if (e.size === 'half') {
-                      // Spawn 2 quarter-size golems
                       for (let s = 0; s < 2; s++) {
                         const angle = (Math.PI * 2 * s) / 2 + (Math.random() - 0.5) * 0.5;
                         const dist = 35;
@@ -1826,12 +1700,10 @@
                 }
               }
               
-              // Metal enemies are immune to shuriken damage
               if (!e.metal) {
                 e.hp -= upgrades.damage;
                 if (e.hp <= 0) markEnemyDead(e);
               } else {
-                // Create metal clang particles
                 const now = Date.now();
                 for (let k = 0; k < 8; k++) {
                   const angle = Math.random() * Math.PI * 2;
@@ -1858,7 +1730,6 @@
           }
         }
 
-        // Darts collisions
         for (let i = darts.length - 1; i >= 0; i--) {
           const d = darts[i];
           d.x += d.vx; d.y += d.vy;
@@ -1868,17 +1739,14 @@
           let hit = false;
           for (const e of enemies) {
             if (e.dead) continue;
-            if (d.hitIds && d.hitIds.includes(e.id)) continue; // Skip if already hit this enemy
+            if (d.hitIds && d.hitIds.includes(e.id)) continue;
             
             const dist = Math.hypot(d.x - e.x, d.y - e.y);
             if (Number.isFinite(dist) && dist < 30) {
-              // Tree golem - defeated by darts (even with 0 damage from utility trap)
               if (e.type === 'tree_golem') {
                 markEnemyDead(e);
-                // Remove all root spikes owned by this tree golem
                 rootSpikes = rootSpikes.filter(root => root.ownerId !== e.id);
                 
-                // Shatter dart: spawn smaller darts on defeat
                 if (progress.dartShatter > 0) {
                   for (let s = 0; s < progress.dartShatter; s++) {
                     if (darts.length >= MAX_DARTS) break;
@@ -1891,7 +1759,7 @@
                       startX: e.x,
                       startY: e.y,
                       maxRange: upgrades.dartRange * 0.5,
-                      hitIds: [e.id] // Don't hit same enemy twice
+                      hitIds: [e.id]
                     });
                   }
                 }
@@ -1901,7 +1769,6 @@
                 break;
               }
               
-              // Other golems immune to darts
               if (e.type === 'golem' || e.type === 'smoke_golem' || e.type === 'fire_golem') {
                 darts.splice(i, 1);
                 hit = true;
@@ -1913,7 +1780,6 @@
               if (e.hp <= 0) {
                 markEnemyDead(e);
                 
-                // Shatter dart: spawn smaller darts on defeat
                 if (progress.dartShatter > 0) {
                   for (let s = 0; s < progress.dartShatter; s++) {
                     if (darts.length >= MAX_DARTS) break;
@@ -1926,7 +1792,7 @@
                       startX: e.x,
                       startY: e.y,
                       maxRange: upgrades.dartRange * 0.5,
-                      hitIds: [e.id] // Don't hit same enemy twice
+                      hitIds: [e.id]
                     });
                   }
                 }
@@ -1940,7 +1806,6 @@
           if (hit) continue;
         }
 
-        // Enemy arrows
         for (let i = enemyArrows.length - 1; i >= 0; i--) {
           const a = enemyArrows[i];
           a.x += a.vx; a.y += a.vy;
@@ -1949,25 +1814,21 @@
           if (dist < 30) { player.hp -= 10; enemyArrows.splice(i, 1); if (player.hp <= 0) gameOver(); }
         }
 
-        // Particles
         for (let i = particles.length - 1; i >= 0; i--) {
           const p = particles[i];
           p.x += p.vx; p.y += p.vy;
           if (Date.now() - p.start >= p.life) particles.splice(i, 1);
         }
 
-        // Finalize deaths (single sweep)
         sweepDeadEnemies();
 
         updateUI();
 
-        // Panic fallback
         if (bullets.length > MAX_BULLETS * 2) bullets.length = MAX_BULLETS;
         if (darts.length > MAX_DARTS * 2) darts.length = MAX_DARTS;
         if (enemyArrows.length > 120) enemyArrows.length = 80;
         if (particles.length > 800) particles.splice(0, particles.length - 600);
       } catch (err) {
-        // Soft recovery
         bullets.length = Math.min(bullets.length, MAX_BULLETS);
         darts.length = Math.min(darts.length, MAX_DARTS);
       }
@@ -2001,20 +1862,16 @@
 
       const height = 20 * growthProgress;
       
-      // Shadow
       ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
       ctx.fillRect(root.x - 8, root.y + 2, 16, 4);
 
-      // Root spike
       ctx.fillStyle = '#5d4037';
       ctx.fillRect(root.x - 6, root.y - height, 12, height + 2);
 
-      // Spike tip
       ctx.fillStyle = '#3e2723';
       ctx.fillRect(root.x - 4, root.y - height - 4, 8, 4);
       ctx.fillRect(root.x - 2, root.y - height - 6, 4, 2);
 
-      // Health bar if damaged
       if (root.hp < root.maxHp) {
         ctx.fillStyle = '#2d1b3d';
         ctx.fillRect(root.x - 8, root.y - height - 10, 16, 3);
@@ -2037,7 +1894,6 @@
     function draw() {
       drawBackground();
       
-      // Draw smoke trails from smoke golems
       for (const e of enemies) {
         if (e.type === 'smoke_golem' && e.smokeTrail) {
           e.smokeTrail.forEach(drawSmokeTrail);
@@ -2051,7 +1907,6 @@
       darts.forEach(drawDart);
       enemyArrows.forEach(drawEnemyArrow);
       particles.forEach(drawParticle);
-      // Player last so he's above effects
       drawPlayer();
     }
 
@@ -2084,7 +1939,6 @@
       }
     }
 
-    // Quiz flow (unchanged visually; stable)
     function startQuiz(forPowerup) {
       game.paused = true;
       quiz.index = 0;
@@ -2228,14 +2082,12 @@
       const container = document.getElementById('shopItems');
       container.innerHTML = '';
 
-      // Section 1: General Upgrades
       const section1 = document.createElement('div');
       section1.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">⭐ General Upgrades</h3>';
       container.appendChild(section1);
       
       addShopItem(container, {id: 'powerup', name: '⭐ Starting Powerups', desc: 'Choose powerups before run', base: 40, mult: 1.5, owned: progress.powerupStart, canBuy: true});
 
-      // Section 2: Smoke Bomb Upgrades
       const section2 = document.createElement('div');
       section2.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">💣 Smoke Bomb Upgrades</h3>';
       container.appendChild(section2);
@@ -2247,7 +2099,6 @@
         addShopItem(container, {id: 'smokeCluster', name: '💥 Cluster Shot', desc: 'Spawn cluster bombs on defeat (radius 25)', base: 80, mult: 1.5, owned: progress.smokeCluster, canBuy: true});
       }
 
-      // Section 3: Blow Dart Upgrades
       const section3 = document.createElement('div');
       section3.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🎯 Blow Dart Upgrades</h3>';
       container.appendChild(section3);
@@ -2259,7 +2110,6 @@
         addShopItem(container, {id: 'dartShatter', name: '💎 Shatter Dart', desc: 'Darts explode into smaller darts on defeat', base: 80, mult: 1.5, owned: progress.dartShatter, canBuy: true});
       }
 
-      // Section 4: Shadow Trap Upgrades
       const section4 = document.createElement('div');
       section4.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🌑 Shadow Trap Upgrades</h3>';
       container.appendChild(section4);
@@ -2271,7 +2121,6 @@
         addShopItem(container, {id: 'shadowDouble', name: '♻️ Double Trap', desc: '+5% chance to respawn on same spot', base: 80, mult: 1.5, owned: progress.shadowDouble, canBuy: true});
       }
 
-      // Section 5: Shuriken Upgrades
       const section5 = document.createElement('div');
       section5.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">⚔️ Shuriken Upgrades</h3>';
       container.appendChild(section5);
@@ -2383,7 +2232,7 @@
       upgrades.shadowCooldown = 10000;
       upgrades.dartUnlocked = progress.dartStart > 0;
       upgrades.dartAmount = 2;
-      upgrades.dartRange = 180;
+      upgrades.dartRange = 120;
       upgrades.dartCooldown = 3000;
 
       progress.runCoins = 10;
@@ -2431,6 +2280,25 @@
       }
 
       targetX = clickX; targetY = clickY;
+    });
+
+    // Question bank selection
+    document.getElementById('genresOption').addEventListener('click', () => {
+      selectedQuestionBank = 'organelles';
+      questions = [...organelleQuestions];
+      document.getElementById('genresOption').style.background = '#6a0572';
+      document.getElementById('genresOption').style.borderColor = '#e94560';
+      document.getElementById('elementsOption').style.background = '#16213e';
+      document.getElementById('elementsOption').style.borderColor = '#6a0572';
+    });
+
+    document.getElementById('elementsOption').addEventListener('click', () => {
+      selectedQuestionBank = 'transport';
+      questions = [...transportQuestions];
+      document.getElementById('elementsOption').style.background = '#6a0572';
+      document.getElementById('elementsOption').style.borderColor = '#e94560';
+      document.getElementById('genresOption').style.background = '#16213e';
+      document.getElementById('genresOption').style.borderColor = '#6a0572';
     });
 
     document.getElementById('startBtn').addEventListener('click', () => {
@@ -2487,5 +2355,5 @@
 
     gameLoop();
   </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9a1c7f3bc0c5d9a8',t:'MTc2MzY4OTQxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a13be2fde15750c6',t:'MTc4MjgwOTA0MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
