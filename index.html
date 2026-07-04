@@ -80,7 +80,7 @@
 
     .title {
       color: #e94560;
-      font-size: 32px;
+      font-size: 35px;
       text-align: center;
       margin-bottom: 20px;
       text-transform: uppercase;
@@ -92,6 +92,12 @@
     .text {
       color: #00d4ff;
       font-size: 16px;
+      line-height: 1.6;
+      margin: 10px 0;
+    }
+    .text2 {
+      color: #ff0037;
+      font-size: 20px;
       line-height: 1.6;
       margin: 10px 0;
     }
@@ -192,19 +198,10 @@
       <p class="text">🎯 Click to throw shurikens at enemies</p>
       <p class="text" id="enemyLine">👾 Defeat enemies to gain XP and coins</p>
       <p class="text">📚 Answer quiz questions for upgrades</p>
-      
       <div style="margin-top: 25px; margin-bottom: 15px;">
-        <h3 class="title" style="font-size: 20px; color: #00d4ff; margin-bottom: 10px;">Choose Question Bank</h3>
-        <div id="genresOption" class="option" style="background: #6a0572; border-color: #e94560;">
-          <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;"> ⚛️ Year 10 forces</div>
-          <div style="color: #00d4ff; font-size: 13px;">Questions about forces</div>
-        </div>
-        <div id="elementsOption" class="option">
-          <div style="font-size: 16px; font-weight: bold; margin-bottom: 5px;">⚛️ Year 10 Speed</div>
-          <div style="color: #00d4ff; font-size: 13px;">Questions about Speed Distance and Time</div>
-        </div>
-      </div>
-      
+      <p class="text2" style="font-size: 25px; text-align: center;">Enter Question Bank Code</p> 
+      <input id="bankCode" style="font-size: 25px;" type="text" placeholder="Enter code">
+      <p id="bankMessage"></p>    
       <button class="btn" id="startBtn">Start Game</button>
     </div>
   </div>
@@ -246,7 +243,7 @@
             <div class="shop-name">🟢 Slime</div>
             <div class="shop-cost" style="color: #f39c12;">Speed: Medium</div>
           </div>
-          <div class="shop-desc">Basic enemy • Defeated by shurikens</div>
+          <div class="shop-desc">Basic enemy</div>
         </div>
 
         <div class="shop-item" style="border-color: #9b59b6;">
@@ -286,7 +283,7 @@
             <div class="shop-name">🗿 Mud Golem</div>
             <div class="shop-cost" style="color: #27ae60;">Speed: Very Slow</div>
           </div>
-          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shurikens • Only defeated by shadow traps</div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ Only defeated by shadow traps!</div>
           <div class="shop-desc">Throws mud at enemies every 5s to double their health</div>
         </div>
 
@@ -295,7 +292,7 @@
             <div class="shop-name">🌳 Tree Golem</div>
             <div class="shop-cost" style="color: #27ae60;">Speed: Very Slow</div>
           </div>
-          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shurikens • Only defeated by blow darts</div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ Only defeated by blow darts!</div>
           <div class="shop-desc">Moves in straight lines • Spawns root spikes that block shurikens</div>
         </div>
 
@@ -304,7 +301,7 @@
             <div class="shop-name">💨 Smoke Golem</div>
             <div class="shop-cost" style="color: #f39c12;">Speed: Medium</div>
           </div>
-          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to shurikens • Only defeated by smoke bombs</div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ Only defeated by smoke bombs!</div>
           <div class="shop-desc">Leaves smoke trail that buffs nearby enemies (+50% health & speed)</div>
         </div>
 
@@ -313,7 +310,7 @@
             <div class="shop-name">🔥 Fire Golem</div>
             <div class="shop-cost" style="color: #f39c12;">Speed: Slow → Fast</div>
           </div>
-          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ IMMUNE to ricochet • Only defeated by direct shuriken hits</div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ Only defeated by direct shuriken hits!</div>
           <div class="shop-desc">Splits into 2 smaller golems on defeat (full → half → quarter)</div>
         </div>
 
@@ -397,60 +394,13 @@
     let quiz = { index: 0, correct: 0, forPowerup: false, pending: 0, usedQuestions: [] };
 
     // Plant biology questions
-    const organelleQuestions = [
-  {q: "What is the unit of force?", o: ["J", "N", "kg", "m/s"], a: 1},
-  {q: "Which equation relates force, mass, and acceleration?", o: ["Force = Mass ÷ Acceleration", "Force = Mass + Acceleration", "Force = Mass × Acceleration", "Force = Acceleration ÷ Mass"], a: 2},
-  {q: "What does the symbol F represent?", o: ["Frequency", "Fuel", "Force", "Friction"], a: 2},
-  {q: "What happens to an object's acceleration if the force acting on it increases but its mass stays the same?", o: ["It becomes zero.", "It decreases.", "It increases.", "It stays the same."], a: 2},
-  {q: "A shopping trolley has a mass of 20 kg. If it accelerates at 3 m/s², what force is applied?", o: ["600 N", "60 N", "23 N", "17 N"], a: 1},
-  {q: "If the same force is applied to two objects, which one accelerates more?", o: ["Neither accelerates.", "The object with the greater mass.", "Both accelerate equally.", "The object with the smaller mass."], a: 3},
-  {q: "What is the mass of an object if a force of 50 N causes it to accelerate at 5 m/s²?", o: ["25 kg", "250 kg", "10 kg", "55 kg"], a: 2},
-  {q: "A force of 80 N acts on a 20 kg object. What is its acceleration?", o: ["4 m/s²", "0.25 m/s²", "100 m/s²", "2 m/s²"], a: 0},
-  {q: "If the mass of an object doubles while the force stays the same, the acceleration will:", o: ["Stay the same.", "Halve.", "Double.", "Triple."], a: 1},
-  {q: "Which statement is true?", o: ["More force causes greater acceleration if mass stays constant.", "Force and mass are measured in the same units.", "Acceleration is measured in Newtons.", "Heavier objects always accelerate faster."], a: 0},
-  {q: "A force of 24 N is applied to a 6 kg object. What is the acceleration?", o: ["2 m/s²", "30 m/s²", "4 m/s²", "3 m/s²"], a: 2},
-  {q: "An object accelerates at 8 m/s² when a force of 40 N is applied. What is its mass?", o: ["48 kg", "8 kg", "5 kg", "32 kg"], a: 2},
-  {q: "Which of the following would require the greatest force to accelerate?", o: ["A 50 kg person", "A 500 g book", "A 5 kg backpack", "A 2 kg ball"], a: 0},
-  {q: "A 10 kg object experiences a force of 100 N. If the force is increased to 200 N, the acceleration becomes:", o: ["40 m/s²", "20 m/s²", "5 m/s²", "10 m/s²"], a: 1},
-  {q: "Which change would cause the greatest increase in acceleration?", o: ["Doubling the mass.", "Doubling the force.", "Increasing both force and mass equally.", "Halving the force."], a: 1},
-  {q: "A rugby player pushes with a force of 600 N on a scrum. If the opposing force is also 600 N, what is the acceleration?", o: ["Negative acceleration", "Cannot be determined", "Zero acceleration", "Positive acceleration"], a: 2},
-  {q: "A force of 90 N acts on a box with a mass of 30 kg. What is the acceleration?", o: ["27 m/s²", "1 m/s²", "3 m/s²", "2 m/s²"], a: 2},
-  {q: "A 12 kg object accelerates at 5 m/s². What is the applied force?", o: ["72 N", "17 N", "120 N", "60 N"], a: 3},
-  {q: "A car's engine provides a greater driving force while its mass stays constant. The car will:", o: ["Lose mass.", "Accelerate faster.", "Maintain constant speed.", "Slow down."], a: 1},
-  {q: "Two objects experience the same force. Object A has twice the mass of Object B. Compared with Object B, Object A will have:", o: ["Four times the acceleration.", "Half the acceleration.", "The same acceleration.", "Twice the acceleration."], a: 1}
-    ];
+   
+    let questions = [];
 
-    const transportQuestions = [
-  {q: "What is the unit of speed?", o: ["kg", "m/s", "N", "m"], a: 1},
-  {q: "Which formula is correct for speed?", o: ["Speed = Time ÷ Distance", "Speed = Distance × Time", "Speed = Distance ÷ Time", "Speed = Time ÷ Speed"], a: 2},
-  {q: "What does distance measure?", o: ["How fast something moves", "The change in direction", "How far something travels", "The time taken"], a: 2},
-  {q: "A car travels 100 m in 10 s. What is its speed?", o: ["1000 m/s", "10 m/s", "0.1 m/s", "90 m/s"], a: 1},
-  {q: "If time increases while distance stays the same, speed will:", o: ["Increase", "Decrease", "Stay the same", "Become zero"], a: 1},
-  {q: "What is the correct unit for distance?", o: ["m", "s", "m/s", "kg"], a: 0},
-  {q: "A cyclist travels 60 m in 12 s. What is the speed?", o: ["7.2 m/s", "5 m/s", "0.2 m/s", "72 m/s"], a: 1},
-  {q: "Which instrument is used to measure time?", o: ["Thermometer", "Ruler", "Stopwatch", "Spring balance"], a: 2},
-  {q: "A runner moves at 8 m/s for 5 seconds. How far do they travel?", o: ["40 m", "13 m", "3 m", "80 m"], a: 0},
-  {q: "If speed increases, the time taken to travel a fixed distance will:", o: ["Increase", "Decrease", "Stay the same", "Become infinite"], a: 1},
-  {q: "A train travels 300 m in 15 s. What is its speed?", o: ["5 m/s", "20 m/s", "15 m/s", "200 m/s"], a: 1},
-  {q: "What is the correct rearrangement of speed = distance ÷ time?", o: ["Distance = speed ÷ time", "Time = speed ÷ distance", "Distance = speed × time", "Time = distance × speed"], a: 2},
-  {q: "A swimmer travels 50 m in 25 s. What is the speed?", o: ["2 m/s", "75 m/s", "1 m/s", "0.5 m/s"], a: 0},
-  {q: "What happens if distance doubles and time stays the same?", o: ["Speed halves", "Speed doubles", "Speed stays the same", "Speed becomes zero"], a: 1},
-  {q: "A car travels at 20 m/s for 10 s. How far does it go?", o: ["200 m", "30 m", "2 m", "100 m"], a: 0},
-  {q: "Which of the following is NOT a unit of speed?", o: ["km/h", "m/s", "km", "mph"], a: 2},
-  {q: "A student walks 120 m in 30 s. What is their speed?", o: ["4 m/s", "3 m/s", "30 m/s", "150 m/s"], a: 0},
-  {q: "If a vehicle travels 200 m in 40 s, what is its speed?", o: ["10 m/s", "2 m/s", "5 m/s", "8 m/s"], a: 2},
-  {q: "What is the formula for distance?", o: ["Distance = speed × time", "Distance = speed ÷ time", "Distance = time ÷ speed", "Distance = time × distance"], a: 0},
-  {q: "A boat travels 500 m in 50 s. What is its speed?", o: ["10 m/s", "100 m/s", "5 m/s", "0.1 m/s"], a: 0},
-  {q: "If time is halved and distance stays the same, speed:", o: ["Doubles", "Halves", "Stays the same", "Becomes zero"], a: 0},
-  {q: "A car moves at 15 m/s for 20 s. Distance travelled is:", o: ["300 m", "35 m", "75 m", "150 m"], a: 0},
-  {q: "Which is the correct formula for time?", o: ["Time = speed × distance", "Time = distance ÷ speed", "Time = speed ÷ distance", "Time = distance × speed"], a: 1},
-  {q: "A runner covers 400 m in 80 s. What is the speed?", o: ["8 m/s", "4 m/s", "5 m/s", "320 m/s"], a: 2},
-  {q: "If speed is 0 m/s, what does this mean?", o: ["Object is accelerating", "Object is moving fast", "Object is stationary", "Object is changing direction"], a: 2}
-    ];
-
-    let questions = [...organelleQuestions]; // Default to organelles
-    let selectedQuestionBank = 'organelles';
-
+const QUESTION_BANK_FILES={
+'92b':'question-banks/year-9-biology.json',
+'92p':'question-banks/year-9-physics.json',
+}
     // Helper functions
     function norm(dx, dy) {
       const d = Math.hypot(dx, dy);
@@ -845,6 +795,20 @@
       ctx.restore();
     }
 
+    async function loadQuestionBank(code){
+
+    const file = QUESTION_BANK_FILES[code];
+
+    if(!file){
+        return false;
+    }
+
+    const response = await fetch(file);
+
+    questions = await response.json();
+
+    return true;
+}
     function drawGolem(e) {
       const breathe = Math.sin(e.anim * 0.02) * 1;
       const rumble = Math.sin(e.anim * 0.15) * 0.5;
@@ -2282,29 +2246,27 @@
       targetX = clickX; targetY = clickY;
     });
 
-    // Question bank selection
-    document.getElementById('genresOption').addEventListener('click', () => {
-      selectedQuestionBank = 'organelles';
-      questions = [...organelleQuestions];
-      document.getElementById('genresOption').style.background = '#6a0572';
-      document.getElementById('genresOption').style.borderColor = '#e94560';
-      document.getElementById('elementsOption').style.background = '#16213e';
-      document.getElementById('elementsOption').style.borderColor = '#6a0572';
-    });
 
-    document.getElementById('elementsOption').addEventListener('click', () => {
-      selectedQuestionBank = 'transport';
-      questions = [...transportQuestions];
-      document.getElementById('elementsOption').style.background = '#6a0572';
-      document.getElementById('elementsOption').style.borderColor = '#e94560';
-      document.getElementById('genresOption').style.background = '#16213e';
-      document.getElementById('genresOption').style.borderColor = '#6a0572';
-    });
+    document.getElementById("startBtn").addEventListener("click", async () => {
 
-    document.getElementById('startBtn').addEventListener('click', () => {
-      document.getElementById('startOverlay').classList.remove('show');
-      document.getElementById('enemyGuideOverlay').classList.add('show');
-    });
+    const code = document
+        .getElementById("bankCode")
+        .value
+        .trim()
+        .toLowerCase();
+
+    const loaded = await loadQuestionBank(code);
+
+    if(!loaded){
+        document.getElementById("bankMessage").textContent =
+            "Invalid Code";
+        return;
+    }
+
+    document.getElementById("startOverlay").classList.remove("show");
+    document.getElementById("enemyGuideOverlay").classList.add("show");
+
+});
 
     document.getElementById('startGameBtn').addEventListener('click', () => {
       document.getElementById('enemyGuideOverlay').classList.remove('show');
