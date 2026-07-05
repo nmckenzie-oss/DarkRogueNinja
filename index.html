@@ -207,6 +207,7 @@
       <button class="btn" id="startBtn">Start Game</button>
     </div>
   </div>
+  </div>
 
   <div id="quizOverlay" class="overlay" role="dialog" aria-modal="true">
     <div class="box">
@@ -395,13 +396,17 @@
     // Quiz state
     let quiz = { index: 0, correct: 0, forPowerup: false, pending: 0, usedQuestions: [] };
 
-    // Plant biology questions
-   
+    
     let questions = [];
-
+// Teacher setup: these are secret session codes mapped to separate JSON files.
+// Add more entries here when you create a new question bank file.
+// data names follow the format '<year><term><Subject initial><Extra letter if full, or specific content>
+// Example Year 9 biology in term 3 full is '93bf'  and year 9 physics speed is '92ps'.  The JSON files are stored in the 'question-banks' folder.
 const QUESTION_BANK_FILES={
-'92b':'question-banks/year-9-biology.json',
-'92p':'question-banks/year-9-physics.json',
+'93bf':'question-banks/year-9-biology-full.json',
+'92ps':'question-banks/year-9-physics-speed.json',
+'92pf':'question-banks/year-9-physics-force.json',
+
 }
     // Helper functions
     function norm(dx, dy) {
@@ -1877,10 +1882,14 @@ const QUESTION_BANK_FILES={
     }
 
     function gameLoop() {
-      update();
+      try{ update();
       draw();
       requestAnimationFrame(gameLoop);
+
+    } catch (err) {
+        console.error("GAME LOOP CRASHED:", err);
     }
+}
 
     function updateUI() {
       const expReq = player.level * player.level * 50;
@@ -2250,7 +2259,6 @@ const QUESTION_BANK_FILES={
 
 
     document.getElementById("startBtn").addEventListener("click", async () => {
-
     const code = document
         .getElementById("bankCode")
         .value
