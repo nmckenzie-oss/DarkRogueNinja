@@ -226,6 +226,14 @@
     </div>
   </div>
 
+  <div id="eventOverlay" class="overlay" role="dialog" aria-modal="true">
+    <div class="box" style="text-align: center;">
+      <h2 class="title" style="color: #d4af37;">⚠️ Something's Different...</h2>
+      <p class="text" id="eventMessage" style="font-style: italic;"></p>
+      <button class="btn" id="eventContinueBtn">Enter the Dungeon</button>
+    </div>
+  </div>
+
   <div id="upgradeOverlay" class="overlay" role="dialog" aria-modal="true">
     <div class="box">
       <h2 class="title">Choose Upgrade!</h2>
@@ -349,6 +357,7 @@
   <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true">
     <div class="box">
       <h2 class="title">Game Over!</h2>
+      <p class="text" id="deathCause" style="color: #ff6b6b; font-weight: bold;"></p>
       <p class="text">Level: <span id="finalLvl">1</span></p>
       <p class="text">💀 Monsters Defeated: <span id="finalKills">0</span></p>
       <p class="text">Time: <span id="finalTime">0</span>s</p>
@@ -427,6 +436,33 @@
     loadProgress();
 
     const WEAPON_NAMES = { shuriken: '🥷 Shurikens', dart: '🏹 Darts', smoke: '💨 Smoke Bomb', trap: '💥 Shadow Trap' };
+
+    const ENEMY_DISPLAY_NAMES = {
+      slime: 'Slime', bat: 'Bat', ghost: 'Ghost', eye: 'Eye', archer: 'Skeleton Archer',
+      troll: 'Troll', golem: 'Mud Golem', tree_golem: 'Tree Golem', smoke_golem: 'Smoke Golem', fire_golem: 'Fire Golem'
+    };
+    const ENEMY_WEAKNESS = {
+      golem: 'Shadow Traps', tree_golem: 'Darts', smoke_golem: 'Smoke Bombs', fire_golem: 'Direct Shuriken Hits'
+    };
+    let lastDeathInfo = null;
+
+    function getDeathMessage(info) {
+      if (!info) return '';
+      let label = ENEMY_DISPLAY_NAMES[info.type] || info.type;
+      if (info.type === 'fire_golem' && info.size) {
+        const sizeLabel = info.size === 'full' ? 'Full-size' : info.size === 'half' ? 'Half-size' : 'Quarter-size';
+        label = `${sizeLabel} ${label}`;
+      }
+      if (info.metal) label = `Metal ${label}`;
+
+      let msg = info.method === 'arrow'
+        ? `☠️ You were struck down by an arrow from a ${label}, dealing ${info.damage} damage.`
+        : `☠️ You were killed by a ${label}, which hit you for ${info.damage} damage.`;
+
+      const weakness = ENEMY_WEAKNESS[info.type];
+      if (weakness) msg += ` (Only vulnerable to: ${weakness})`;
+      return msg;
+    }
     // Cost/kill requirement to buy the *next* level for a weapon.
     function weaponLevelCost(weaponKey, nextLevel, repeatBuys) {
       if (nextLevel === 1) return { coin: 100, kills: 0 };
@@ -488,7 +524,7 @@
     let shadowReady = true;
 
     // Quiz state
-    let quiz = { index: 0, correct: 0, forPowerup: false, pending: 0, usedQuestions: [] };
+    let quiz = { index: 0, correct: 0, forPowerup: false, pending: 0, usedQuestions: [], questionCount: 4 };
 
     
     let questions = [];
@@ -1032,7 +1068,7 @@ const QUESTION_BANK_FILES={
     if (devMode) {
         // Dev/testing shortcut: 1000 bonus coin + every weapon unlocked to start with
         // (still at level 0 — buy shop upgrades normally to test specific abilities).
-        progress.totalCoins += 100000;
+        progress.totalCoins += 1000;
         progress.weapons.dart.unlocked = true;
         progress.weapons.dart.kills = Math.max(progress.weapons.dart.kills, WEAPON_UNLOCK_KILLS);
         progress.weapons.smoke.unlocked = true;
@@ -1288,6 +1324,68 @@ const QUESTION_BANK_FILES={
       clampParticles();
     }
 
+    let activeEvent = { id: null, speedMult: 1, onlyType: null, groupMult: 1, onlyGolems: false, coinMult: 1, damageMult: 1, doubleQuestions: false };
+
+    const RANDOM_EVENTS = [
+      { weight: 0.05, id: 'fastEnemies', message: 'The enemies are angrier and more desperate to kill you...', apply: (ev) => { ev.speedMult = 1.5; } },
+      { weight: 0.025, id: 'singleTypeSwarm', apply: (ev) => {
+          const pool = ['slime', 'bat', 'ghost', 'eye', 'archer', 'troll'];
+          ev.onlyType = pool[Math.floor(Math.random() * pool.length)];
+          ev.groupMult = 1.5;
+        }
+      },
+      { weight: 0.025, id: 'onlyGolems', message: 'In entering this dungeon, only golems were found guarding the halls...', apply: (ev) => { ev.onlyGolems = true; } },
+      { weight: 0.05, id: 'slowEnemies', message: 'The enemies seem sluggish and lethargic today...', apply: (ev) => { ev.speedMult = 0.75; } },
+      { weight: 0.05, id: 'doubleCoin', message: 'The enemies are carrying unusually heavy purses...', apply: (ev) => { ev.coinMult = 2; } },
+      { weight: 0.05, id: 'doubleDamage', message: 'The enemies attack with unusual ferocity...', apply: (ev) => { ev.damageMult = 2; } },
+      { weight: 0.05, id: 'doubleQuestions', message: 'A heavier trial awaits at each level-up...', apply: (ev) => { ev.doubleQuestions = true; } }
+    ];
+
+    function rollRandomEvent() {
+      const ev = { id: null, speedMult: 1, onlyType: null, groupMult: 1, onlyGolems: false, coinMult: 1, damageMult: 1, doubleQuestions: false };
+      const roll = Math.random();
+      let cumulative = 0;
+      let chosen = null;
+      for (const e of RANDOM_EVENTS) {
+        cumulative += e.weight;
+        if (roll < cumulative) { chosen = e; break; }
+      }
+
+      let message = null;
+      if (chosen) {
+        chosen.apply(ev);
+        ev.id = chosen.id;
+        if (chosen.id === 'singleTypeSwarm') {
+          message = `In entering this dungeon, only ${ENEMY_DISPLAY_NAMES[ev.onlyType]}s were found lurking within...`;
+        } else {
+          message = chosen.message;
+        }
+      }
+
+      activeEvent = ev;
+      return message;
+    }
+
+    function spawnSpecificEnemy(type, x, y, speedMultiplier, baseHp, isMetal) {
+      const id = nextEnemyId++;
+      if (type === 'bat') {
+        enemies.push({ id, type: 'bat', x, y, speed: 0.8 * speedMultiplier, hp: 1, maxHp: 1, anim: Math.random() * 100, metal: isMetal });
+      } else if (type === 'ghost') {
+        enemies.push({ id, type: 'ghost', x, y, speed: 0.2 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, sineOffset: 0, metal: isMetal });
+      } else if (type === 'eye') {
+        const eyeHp = baseHp * 2;
+        enemies.push({ id, type: 'eye', x, y, speed: 0.2 * speedMultiplier, hp: eyeHp, maxHp: eyeHp, anim: Math.random() * 100, lastWarp: Date.now(), metal: isMetal });
+      } else if (type === 'archer') {
+        enemies.push({ id, type: 'archer', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, lastShot: 0, metal: isMetal });
+      } else if (type === 'troll') {
+        const trollHp = baseHp * 2;
+        const now = Date.now();
+        enemies.push({ id, type: 'troll', x, y, speed: 0.12 * speedMultiplier, hp: trollHp, maxHp: trollHp, anim: Math.random() * 100, metal: isMetal, lastHit: now, lastRegen: now });
+      } else {
+        enemies.push({ id, type: 'slime', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, metal: isMetal });
+      }
+    }
+
     function spawnEnemy() {
       const side = Math.floor(Math.random() * 4);
       let x, y;
@@ -1298,13 +1396,13 @@ const QUESTION_BANK_FILES={
 
       const rand = Math.random();
       const baseHp = Math.floor(player.level / 3) + 1;
-      const speedMultiplier = Math.pow(0.75, progress.runNumber - 1);
+      const speedMultiplier = Math.pow(0.75, progress.runNumber - 1) * activeEvent.speedMult;
 
       const metalChance = Math.min(0.01 + (progress.deaths * 0.01), 0.10);
       const isMetal = Math.random() < metalChance;
 
       const golemChance = Math.min(player.level * 0.01, 0.10);
-      if (Math.random() < golemChance) {
+      if (activeEvent.onlyGolems || Math.random() < golemChance) {
         const golemRoll = Math.random();
         if (golemRoll < 0.25) {
           enemies.push({ id: nextEnemyId++, type: 'golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, lastAbility: Date.now() });
@@ -1318,27 +1416,33 @@ const QUESTION_BANK_FILES={
         return;
       }
 
-      const id = nextEnemyId++;
+      if (activeEvent.onlyType) {
+        const baseGroupSize = activeEvent.onlyType === 'bat' ? progress.runNumber + 1 : 1;
+        const groupSize = Math.max(1, Math.ceil(baseGroupSize * activeEvent.groupMult));
+        for (let i = 0; i < groupSize; i++) {
+          const ox = x + (Math.random() - 0.5) * 60;
+          const oy = y + (Math.random() - 0.5) * 60;
+          spawnSpecificEnemy(activeEvent.onlyType, ox, oy, speedMultiplier, baseHp, Math.random() < metalChance);
+        }
+        return;
+      }
 
       if (rand < 0.10) {
         const groupSize = progress.runNumber + 1;
         for (let i = 0; i < groupSize; i++) {
           const batMetal = Math.random() < metalChance;
-          enemies.push({ id: nextEnemyId++, type: 'bat', x: x + (Math.random() - 0.5) * 60, y: y + (Math.random() - 0.5) * 60, speed: 0.8 * speedMultiplier, hp: 1, maxHp: 1, anim: Math.random() * 100, metal: batMetal });
+          spawnSpecificEnemy('bat', x + (Math.random() - 0.5) * 60, y + (Math.random() - 0.5) * 60, speedMultiplier, baseHp, batMetal);
         }
       } else if (rand < 0.20) {
-        enemies.push({ id, type: 'ghost', x, y, speed: 0.2 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, sineOffset: 0, metal: isMetal });
+        spawnSpecificEnemy('ghost', x, y, speedMultiplier, baseHp, isMetal);
       } else if (rand < 0.25) {
-        const eyeHp = baseHp * 2;
-        enemies.push({ id, type: 'eye', x, y, speed: 0.2 * speedMultiplier, hp: eyeHp, maxHp: eyeHp, anim: Math.random() * 100, lastWarp: Date.now(), metal: isMetal });
+        spawnSpecificEnemy('eye', x, y, speedMultiplier, baseHp, isMetal);
       } else if (rand < 0.35) {
-        enemies.push({ id, type: 'archer', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, lastShot: 0, metal: isMetal });
+        spawnSpecificEnemy('archer', x, y, speedMultiplier, baseHp, isMetal);
       } else if (rand < 0.45) {
-        const trollHp = baseHp * 2;
-        const now = Date.now();
-        enemies.push({ id, type: 'troll', x, y, speed: 0.12 * speedMultiplier, hp: trollHp, maxHp: trollHp, anim: Math.random() * 100, metal: isMetal, lastHit: now, lastRegen: now });
+        spawnSpecificEnemy('troll', x, y, speedMultiplier, baseHp, isMetal);
       } else {
-        enemies.push({ id, type: 'slime', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, metal: isMetal });
+        spawnSpecificEnemy('slime', x, y, speedMultiplier, baseHp, isMetal);
       }
     }
 
@@ -1550,7 +1654,7 @@ const QUESTION_BANK_FILES={
       createDefeatParticles(e.x, e.y, e.type);
       player.exp += 10;
       player.kills++;
-      progress.runCoins++;
+      progress.runCoins += activeEvent.coinMult;
 
       // Enemies killed while standing in a stunning-mist smoke cloud always
       // count as a smoke bomb kill, regardless of what actually finished them off.
@@ -1874,7 +1978,7 @@ const QUESTION_BANK_FILES={
               if (now - e.lastShot > 2000) {
                 e.lastShot = now;
                 const arrowSpeed = 2.6;
-                enemyArrows.push({ x: e.x, y: e.y, vx: v.nx * arrowSpeed, vy: v.ny * arrowSpeed, rot: Math.atan2(player.y - e.y, player.x - e.x) });
+                enemyArrows.push({ x: e.x, y: e.y, vx: v.nx * arrowSpeed, vy: v.ny * arrowSpeed, rot: Math.atan2(player.y - e.y, player.x - e.x), metal: !!e.metal });
               }
             }
           } else if (e.type === 'golem') {
@@ -1951,10 +2055,12 @@ const QUESTION_BANK_FILES={
               else if (e.size === 'half') damage = 25;
               else if (e.size === 'quarter') damage = 15;
             }
+            damage *= activeEvent.damageMult;
             
             player.hp -= damage;
             markEnemyDead(e);
-            if (player.hp <= 0) { 
+            if (player.hp <= 0) {
+              lastDeathInfo = { type: e.type, damage, metal: !!e.metal, size: e.size || null, method: 'melee' };
               updateUI(); 
               gameOver(); 
               return;
@@ -2199,7 +2305,14 @@ const QUESTION_BANK_FILES={
           a.x += a.vx; a.y += a.vy;
           if (a.x < -50 || a.x > 850 || a.y < -50 || a.y > 650) { enemyArrows.splice(i, 1); continue; }
           const dist = Math.hypot(a.x - player.x, a.y - player.y);
-          if (dist < 30) { player.hp -= 10; enemyArrows.splice(i, 1); if (player.hp <= 0) gameOver(); }
+          if (dist < 30) {
+            player.hp -= 10 * activeEvent.damageMult;
+            enemyArrows.splice(i, 1);
+            if (player.hp <= 0) {
+              lastDeathInfo = { type: 'archer', damage: 10 * activeEvent.damageMult, metal: !!a.metal, size: null, method: 'arrow' };
+              gameOver();
+            }
+          }
         }
 
         for (let i = particles.length - 1; i >= 0; i--) {
@@ -2358,18 +2471,20 @@ const QUESTION_BANK_FILES={
       quiz.correct = 0;
       quiz.forPowerup = forPowerup;
       quiz.usedQuestions = [];
+      quiz.questionCount = activeEvent.doubleQuestions ? 8 : 4;
       document.getElementById('quizOverlay').classList.add('show');
       document.getElementById('quizResult').style.display = 'none';
       showQuestion();
     }
 
     function showQuestion() {
-      if (quiz.index >= 4) { showQuizResult(); return; }
+      if (quiz.index >= quiz.questionCount) { showQuizResult(); return; }
       const available = questions.filter((q, idx) => !quiz.usedQuestions.includes(idx));
-      const q = available[Math.floor(Math.random() * available.length)];
+      const pool = available.length > 0 ? available : questions;
+      const q = pool[Math.floor(Math.random() * pool.length)];
       const originalIndex = questions.indexOf(q);
       quiz.usedQuestions.push(originalIndex);
-      document.getElementById('quizNum').textContent = `Question ${quiz.index + 1}/4`;
+      document.getElementById('quizNum').textContent = `Question ${quiz.index + 1}/${quiz.questionCount}`;
       document.getElementById('quizQ').textContent = q.q;
 
       const container = document.getElementById('quizOpts');
@@ -2414,7 +2529,7 @@ const QUESTION_BANK_FILES={
       
       setTimeout(() => {
         document.getElementById('quizOverlay').classList.remove('show');
-        if (quiz.correct === 4) {
+        if (quiz.correct === quiz.questionCount) {
           const bonusOverlay = document.getElementById('bonusOverlay');
           document.getElementById('bonusName').textContent = "⚡ All Cooldowns -5%";
           bonusOverlay.classList.add('show');
@@ -2818,6 +2933,7 @@ const QUESTION_BANK_FILES={
           document.getElementById('finalKills').textContent = player.kills;
           document.getElementById('finalTime').textContent = Math.floor(game.time / 1000);
           document.getElementById('finalCoins').textContent = progress.runCoins;
+          document.getElementById('deathCause').textContent = getDeathMessage(lastDeathInfo);
 
           renderShop();
           document.getElementById('gameOverOverlay').classList.add('show');
@@ -2828,6 +2944,7 @@ const QUESTION_BANK_FILES={
     }
 
     function reset() {
+      lastDeathInfo = null;
       player.x = 400; player.y = 300;
       player.hp = 100; player.maxHp = 100;
       player.level = 1; player.exp = 0; player.kills = 0;
@@ -2874,6 +2991,22 @@ const QUESTION_BANK_FILES={
       game.active = true;
       game.paused = false;
     }
+
+    function showRandomEventThenStart() {
+      const message = rollRandomEvent();
+      if (message) {
+        game.paused = true;
+        document.getElementById('eventMessage').textContent = message;
+        document.getElementById('eventOverlay').classList.add('show');
+      } else {
+        startPowerupPhase();
+      }
+    }
+
+    document.getElementById('eventContinueBtn').addEventListener('click', () => {
+      document.getElementById('eventOverlay').classList.remove('show');
+      startPowerupPhase();
+    });
 
     function startPowerupPhase() {
       if (progress.powerupStart > 0) {
@@ -2954,7 +3087,7 @@ const QUESTION_BANK_FILES={
       document.getElementById('enemyGuideOverlay').classList.remove('show');
       reset();
       updateUI();
-      startPowerupPhase();
+      showRandomEventThenStart();
       gameLoop();
     });
 
@@ -2962,7 +3095,7 @@ const QUESTION_BANK_FILES={
       progress.runNumber++;
       reset();
       updateUI();
-      startPowerupPhase();
+      showRandomEventThenStart();
       gameLoop();
     });
 
