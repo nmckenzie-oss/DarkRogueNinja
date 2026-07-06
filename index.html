@@ -317,6 +317,15 @@
           <div class="shop-desc">Splits into 2 smaller golems on defeat (full → half → quarter)</div>
         </div>
 
+        <div class="shop-item" style="border-color: #6b8e4e;">
+          <div class="shop-header">
+            <div class="shop-name">🧌 Troll</div>
+            <div class="shop-cost" style="color: #27ae60;">Speed: Very Slow</div>
+          </div>
+          <div class="shop-desc" style="color: #e74c3c; font-weight: bold;">⚠️ Regenerates HP if not hit constantly!</div>
+          <div class="shop-desc">Double slime health • Heals 1 HP if left alone for a moment</div>
+        </div>
+
         <div class="shop-item" style="border-color: #9ca3af;">
           <div class="shop-header">
             <div class="shop-name">⚙️ Metal Variants</div>
@@ -366,7 +375,87 @@
     // Game state
     let game = { active: false, paused: false, time: 0, frame: 0 };
     let player = { x: 400, y: 300, hp: 100, maxHp: 100, level: 1, exp: 0, kills: 0 };
-    let progress = { totalCoins: 0, runCoins: 0, runNumber: 1, reverseShot: 0, ricochet: 0, smokeStart: 0, smokePriority: 0, smokeCluster: 0, powerupStart: 0, dartStart: 0, dartSpread: 0, dartShatter: 0, shadowStart: 0, shadowUtility: 0, shadowDouble: 0, wallBounce: 0, deaths: 0 };
+    let progress = {
+      totalCoins: 0, runCoins: 0, runNumber: 1, deaths: 0, powerupStart: 0,
+      weapons: {
+        shuriken: { unlocked: true, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        dart:     { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        smoke:    { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        trap:     { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 }
+      }
+    };
+    const SAVE_KEY = 'ninjaShurikenGameProgress';
+    // Only total coins and per-weapon kill counts persist across a refresh.
+    // Levels/paths always reset fresh so a student can freely try a different pathway.
+    function saveProgress() {
+      try {
+        const slim = {
+          totalCoins: progress.totalCoins,
+          weaponKills: {
+            shuriken: progress.weapons.shuriken.kills,
+            dart: progress.weapons.dart.kills,
+            smoke: progress.weapons.smoke.kills,
+            trap: progress.weapons.trap.kills
+          }
+        };
+        localStorage.setItem(SAVE_KEY, JSON.stringify(slim));
+      } catch (e) {
+        // localStorage unavailable (e.g. private browsing) — fail silently, progress just won't persist.
+      }
+    }
+    function loadProgress() {
+      try {
+        const raw = localStorage.getItem(SAVE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (typeof saved.totalCoins === 'number') progress.totalCoins = saved.totalCoins;
+        if (saved.weaponKills) {
+          for (const key of ['shuriken', 'dart', 'smoke', 'trap']) {
+            const k = saved.weaponKills[key];
+            if (typeof k === 'number') {
+              progress.weapons[key].kills = k;
+              if (k >= WEAPON_UNLOCK_KILLS) progress.weapons[key].unlocked = true;
+            }
+          }
+        }
+      } catch (e) {
+        // Corrupt or missing save — just start fresh.
+      }
+    }
+
+    const WEAPON_UNLOCK_KILLS = 10;
+    loadProgress();
+
+    const WEAPON_NAMES = { shuriken: '🥷 Shurikens', dart: '🏹 Darts', smoke: '💨 Smoke Bomb', trap: '💥 Shadow Trap' };
+    // Cost/kill requirement to buy the *next* level for a weapon.
+    function weaponLevelCost(weaponKey, nextLevel, repeatBuys) {
+      if (nextLevel === 1) return { coin: 100, kills: 0 };
+      if (nextLevel === 2) return { coin: 125, kills: 0 };
+      if (nextLevel === 3) return { coin: 150, kills: weaponKey === 'shuriken' ? 200 : 100 };
+      if (nextLevel === 4) return { coin: 300, kills: weaponKey === 'shuriken' ? 300 : 200 };
+      // Level 5+ is repeatable: cost grows 1.5x per purchase, kill requirement grows by 100 per purchase.
+      const n = repeatBuys + 1;
+      return { coin: Math.floor(500 * Math.pow(1.5, repeatBuys)), kills: (4 + n) * 100 };
+    }
+    function wInfo(key) { return progress.weapons[key]; }
+    function wLevel(key) { return progress.weapons[key].level; }
+    function wPath(key) { return progress.weapons[key].path; }
+    function wUnlocked(key) { return progress.weapons[key].unlocked; }
+    // Levels 1-2 can be bought independently in EITHER path before committing.
+    // Buying level 3 locks in whichever path you buy it for (the other path's L1/L2 stop applying).
+    // Levels 1-2 can be bought independently in EITHER path before committing, and once bought they
+    // stay active forever — even after you commit to the other path at level 3. Only the *committed*
+    // path can progress past level 2.
+    function pathLevel(key, path) {
+      const w = progress.weapons[key];
+      if (w.path === path) return w.level;
+      // Not the committed path (or no path chosen yet): whatever was bought pre-commit (max level 2) still applies.
+      return path === 'A' ? Math.min(w.levelA, 2) : Math.min(w.levelB, 2);
+    }
+    function wRepeats(key) {
+      const w = progress.weapons[key];
+      return w.path ? Math.max(0, w.level - 4) : 0;
+    }
     let upgrades = { projSpeed: 5, damage: 1, cooldown: 900, smokeUnlocked: false, smokeDamage: 1, smokeCooldown: 4000, shadowUnlocked: false, shadowDamage: 2, shadowRadius: 100, shadowCooldown: 10000, dartUnlocked: false, dartAmount: 2, dartRange: 120, dartCooldown: 3000 };
 
     // Entities and IDs
@@ -379,10 +468,15 @@
     let darts = [];
     let particles = [];
     let rootSpikes = [];
+    let smokeClouds = [];
+    let poisonPools = [];
+    let shurikenMag = { current: 2, capacity: 2, lastRegen: 0 };
 
     // Safety caps
     const MAX_BULLETS = 60;
     const MAX_DARTS = 40;
+    const BASE_SHURIKEN_COOLDOWN = 900;
+    const TROLL_REGEN_INTERVAL = BASE_SHURIKEN_COOLDOWN * 0.95; // troll regenerates 1 HP at this interval if left unhit
 
     // Timers and inputs
     let lastShoot = 0;
@@ -565,6 +659,31 @@ const QUESTION_BANK_FILES={
       ctx.fillRect(player.x - 15, player.y - 21 + breathe + headBob, 30, 4);
       ctx.fillStyle = '#34495e';
       ctx.fillRect(player.x - 2, player.y - 21 + breathe + headBob, 4, 4);
+
+      // Storm of Steel: magazine pips + orbiting shurikens
+      if (pathLevel('shuriken', 'B') >= 3) {
+        const pipSpacing = 12;
+        const startX = player.x - ((shurikenMag.capacity - 1) * pipSpacing) / 2;
+        for (let p = 0; p < shurikenMag.capacity; p++) {
+          ctx.fillStyle = p < shurikenMag.current ? '#00d4ff' : 'rgba(255,255,255,0.2)';
+          ctx.beginPath();
+          ctx.arc(startX + p * pipSpacing, player.y - 42, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        if (wLevel('shuriken') >= 4) {
+          for (let p = 0; p < shurikenMag.current; p++) {
+            const angle = (game.frame * 0.05) + (p * Math.PI * 2 / Math.max(1, shurikenMag.current));
+            const ox = player.x + Math.cos(angle) * 28;
+            const oy = player.y + Math.sin(angle) * 28;
+            ctx.save();
+            ctx.translate(ox, oy);
+            ctx.rotate(game.frame * 0.2);
+            ctx.fillStyle = '#c0c0c0';
+            ctx.fillRect(-4, -4, 8, 8);
+            ctx.restore();
+          }
+        }
+      }
     }
 
     function drawEnemy(e) {
@@ -586,7 +705,27 @@ const QUESTION_BANK_FILES={
       else if (e.type === 'tree_golem') drawTreeGolem(e);
       else if (e.type === 'smoke_golem') drawSmokeGolem(e);
       else if (e.type === 'fire_golem') drawFireGolem(e);
+      else if (e.type === 'troll') drawTroll(e);
       else drawSlime(e);
+
+      const now = Date.now();
+      if (e.stunnedUntil && now < e.stunnedUntil) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.font = '14px sans-serif';
+        ctx.fillText('✳', e.x - 6, e.y - 44);
+      }
+      if (e.poisonUntil && now < e.poisonUntil) {
+        ctx.fillStyle = '#39ff6a';
+        ctx.beginPath();
+        ctx.arc(e.x + 14, e.y - 40, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      if (e.bleedUntil && now < e.bleedUntil) {
+        ctx.fillStyle = '#c0392b';
+        ctx.beginPath();
+        ctx.arc(e.x - 14, e.y - 40, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
     }
 
     function drawSlime(e) {
@@ -642,6 +781,73 @@ const QUESTION_BANK_FILES={
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(e.x - 1 + wobble + pupilOffsetX, e.y - 6 - bounce + pupilOffsetY, 2, 2);
+    }
+
+    function drawTroll(e) {
+      const lumber = Math.sin(e.anim * 0.02) * 3;
+      const armSwing = Math.sin(e.anim * 0.02) * 6;
+
+      if (e.maxHp > 1) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(e.x - 24, e.y - 48, 48, 5);
+        ctx.fillStyle = e.hp / e.maxHp > 0.5 ? '#2ecc71' : '#e74c3c';
+        ctx.fillRect(e.x - 24, e.y - 48, 48 * (e.hp / e.maxHp), 5);
+      }
+
+      const now = Date.now();
+      const isRegening = now - (e.lastHit || 0) >= TROLL_REGEN_INTERVAL;
+      if (isRegening && e.hp < e.maxHp) {
+        const pulse = Math.sin(now * 0.006) * 0.25 + 0.45;
+        ctx.globalAlpha = pulse;
+        ctx.fillStyle = '#39ff6a';
+        ctx.beginPath();
+        ctx.arc(e.x, e.y - 10, 34, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+      ctx.fillRect(e.x - 22, e.y + 14, 44, 7);
+
+      const skinDark = e.metal ? '#6b7280' : '#4b5d3a';
+      const skinMain = e.metal ? '#9ca3af' : '#6b8e4e';
+      const skinLight = e.metal ? '#d1d5db' : '#8bab5e';
+
+      // legs
+      ctx.fillStyle = skinDark;
+      ctx.fillRect(e.x - 16, e.y + 2, 12, 14);
+      ctx.fillRect(e.x + 4, e.y + 2, 12, 14);
+
+      // arms (swinging slightly)
+      ctx.fillStyle = skinMain;
+      ctx.fillRect(e.x - 30, e.y - 14 + armSwing, 10, 24);
+      ctx.fillRect(e.x + 20, e.y - 14 - armSwing, 10, 24);
+
+      // torso
+      ctx.fillStyle = skinMain;
+      ctx.fillRect(e.x - 20, e.y - 22 + lumber * 0.2, 40, 26);
+      ctx.fillStyle = skinLight;
+      ctx.fillRect(e.x - 20, e.y - 22 + lumber * 0.2, 40, 5);
+
+      // head
+      ctx.fillStyle = skinDark;
+      ctx.fillRect(e.x - 13, e.y - 40 + lumber * 0.2, 26, 20);
+
+      // eyes
+      const dx = player.x - e.x;
+      const dy = player.y - e.y;
+      const dist = Math.hypot(dx, dy);
+      const maxOffset = 2;
+      const eyeOffX = dist > 0 ? (dx / dist) * maxOffset : 0;
+      const eyeOffY = dist > 0 ? (dy / dist) * maxOffset : 0;
+      ctx.fillStyle = '#ff3b3b';
+      ctx.fillRect(e.x - 8 + eyeOffX, e.y - 32 + lumber * 0.2 + eyeOffY, 5, 5);
+      ctx.fillRect(e.x + 3 + eyeOffX, e.y - 32 + lumber * 0.2 + eyeOffY, 5, 5);
+
+      // tusks
+      ctx.fillStyle = '#f5f5f0';
+      ctx.fillRect(e.x - 9, e.y - 22 + lumber * 0.2, 3, 6);
+      ctx.fillRect(e.x + 6, e.y - 22 + lumber * 0.2, 3, 6);
     }
 
     function drawBat(e) {
@@ -802,9 +1008,18 @@ const QUESTION_BANK_FILES={
       ctx.restore();
     }
 
+    const DEV_CHEAT_CODE = 'devtest';
+
     async function loadQuestionBank(code){
 
-    const file = QUESTION_BANK_FILES[code];
+    let devMode = false;
+    let lookupCode = code;
+    if (code === DEV_CHEAT_CODE) {
+        devMode = true;
+        lookupCode = Object.keys(QUESTION_BANK_FILES)[0];
+    }
+
+    const file = QUESTION_BANK_FILES[lookupCode];
 
     if(!file){
         return false;
@@ -813,6 +1028,19 @@ const QUESTION_BANK_FILES={
     const response = await fetch(file);
 
     questions = await response.json();
+
+    if (devMode) {
+        // Dev/testing shortcut: 1000 bonus coin + every weapon unlocked to start with
+        // (still at level 0 — buy shop upgrades normally to test specific abilities).
+        progress.totalCoins += 100000;
+        progress.weapons.dart.unlocked = true;
+        progress.weapons.dart.kills = Math.max(progress.weapons.dart.kills, WEAPON_UNLOCK_KILLS);
+        progress.weapons.smoke.unlocked = true;
+        progress.weapons.smoke.kills = Math.max(progress.weapons.smoke.kills, WEAPON_UNLOCK_KILLS);
+        progress.weapons.trap.unlocked = true;
+        progress.weapons.trap.kills = Math.max(progress.weapons.trap.kills, WEAPON_UNLOCK_KILLS);
+        saveProgress();
+    }
 
     return true;
 }
@@ -1105,6 +1333,10 @@ const QUESTION_BANK_FILES={
         enemies.push({ id, type: 'eye', x, y, speed: 0.2 * speedMultiplier, hp: eyeHp, maxHp: eyeHp, anim: Math.random() * 100, lastWarp: Date.now(), metal: isMetal });
       } else if (rand < 0.35) {
         enemies.push({ id, type: 'archer', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, lastShot: 0, metal: isMetal });
+      } else if (rand < 0.45) {
+        const trollHp = baseHp * 2;
+        const now = Date.now();
+        enemies.push({ id, type: 'troll', x, y, speed: 0.12 * speedMultiplier, hp: trollHp, maxHp: trollHp, anim: Math.random() * 100, metal: isMetal, lastHit: now, lastRegen: now });
       } else {
         enemies.push({ id, type: 'slime', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, metal: isMetal });
       }
@@ -1115,21 +1347,85 @@ const QUESTION_BANK_FILES={
       if (enemies.length < target && (game.frame % 5 === 0)) spawnEnemy();
     }
 
+    const HOMING_LOCK_RADIUS = 100;
+    function findHomingLockTarget() {
+      let best = null, bestDist = HOMING_LOCK_RADIUS;
+      for (const e of enemies) {
+        if (e.dead) continue;
+        const d = Math.hypot(e.x - targetX, e.y - targetY);
+        if (d <= bestDist) { bestDist = d; best = e; }
+      }
+      return best;
+    }
+
+    function fireShurikenVolley() {
+      const v = norm(targetX - player.x, targetY - player.y);
+      if (v.d === 0) return;
+      const speed = upgrades.projSpeed;
+      const baseAngle = Math.atan2(v.ny, v.nx);
+
+      const levelA = pathLevel('shuriken', 'A');
+      const levelB = pathLevel('shuriken', 'B');
+
+      const extra = levelB >= 1 ? 1 : 0;
+      const numShots = 1 + extra;
+      const spreadAngle = levelB >= 2 ? 0.3 : 0.1;
+
+      // Homing only locks onto an enemy that's within a set radius of where you clicked.
+      // If none are in range, the shuriken just flies straight — no seeking around the map.
+      const homingTarget = levelA >= 2 ? findHomingLockTarget() : null;
+
+      for (let i = 0; i < numShots; i++) {
+        if (bullets.length >= MAX_BULLETS) break;
+        const offset = numShots > 1 ? (i - (numShots - 1) / 2) * spreadAngle : 0;
+        const angle = baseAngle + offset;
+        bullets.push({
+          x: player.x, y: player.y,
+          vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+          rot: 0,
+          dmg: upgrades.damage,
+          fullRicochets: wRepeats('shuriken'),
+          falloffRicochet: levelA >= 3,
+          homing: !!homingTarget,
+          homingTargetId: homingTarget ? homingTarget.id : null,
+          stunOnHit: levelA >= 4,
+          hasBounced: false,
+          hitIds: []
+        });
+      }
+    }
+
     function shoot() {
+      // Storm of Steel path 3+ switches to manual click-to-fire with a magazine (see canvas click handler).
+      if (pathLevel('shuriken', 'B') >= 3) return;
+
       const now = Date.now();
       const dynamicCooldown = Math.min(upgrades.cooldown * 1.2, upgrades.cooldown + 120);
       if (now - lastShoot < dynamicCooldown) return;
       lastShoot = now;
 
-      const v = norm(targetX - player.x, targetY - player.y);
-      if (v.d === 0) return;
-      const speed = upgrades.projSpeed;
+      fireShurikenVolley();
+    }
 
-      if (bullets.length < MAX_BULLETS) {
-        bullets.push({ x: player.x, y: player.y, vx: v.nx * speed, vy: v.ny * speed, rot: 0, ricochet: progress.ricochet, bounces: progress.wallBounce, hitIds: [] });
+    function explodeSmokeAt(x, y, radius, dealsDamage) {
+      const now = Date.now();
+      for (let i = 0; i < 16; i++) {
+        particles.push({ x: x + (Math.random() - 0.5) * radius, y: y + (Math.random() - 0.5) * radius, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 8 + 4, color: Math.random() > 0.5 ? '#666' : '#888', start: now, life: 800 });
       }
-      if (progress.reverseShot > 0 && bullets.length < MAX_BULLETS) {
-        bullets.push({ x: player.x, y: player.y, vx: -v.nx * speed, vy: -v.ny * speed, rot: 0, ricochet: progress.ricochet, bounces: progress.wallBounce, hitIds: [] });
+      clampParticles();
+
+      for (const e of enemies) {
+        if (e.dead) continue;
+        if (e.type === 'golem' || e.type === 'tree_golem' || e.type === 'fire_golem') continue;
+        const dist = Math.hypot(e.x - x, e.y - y);
+        if (dist > radius) continue;
+        if (e.type === 'smoke_golem') { markEnemyDead(e, 'smoke'); continue; }
+        if (!dealsDamage) continue;
+        let dmg = upgrades.smokeDamage;
+        if (e.cloudDamageAmp && e.cloudDamageAmp > 1) dmg *= e.cloudDamageAmp;
+        e.hp -= dmg;
+        e.lastHit = now;
+        if (e.hp <= 0) markEnemyDead(e, 'smoke');
       }
     }
 
@@ -1139,113 +1435,54 @@ const QUESTION_BANK_FILES={
       if (enemies.length === 0) return;
       lastSmoke = now;
 
-      let target;
-      const priorityChance = progress.smokePriority * 0.05;
-      if (Math.random() < priorityChance) {
-        let minDist = Infinity;
-        for (const e of enemies) {
-          if (e.dead) continue;
-          const dist = Math.hypot(e.x - player.x, e.y - player.y);
-          if (dist < minDist) {
-            minDist = dist;
-            target = e;
-          }
-        }
-      } else {
-        target = enemies[Math.floor(Math.random() * enemies.length)];
+      let target = null, minDist = Infinity;
+      for (const e of enemies) {
+        if (e.dead) continue;
+        const dist = Math.hypot(e.x - player.x, e.y - player.y);
+        if (dist < minDist) { minDist = dist; target = e; }
       }
-      
-      if (!target || target.dead) return;
-      
-      if (target.type === 'smoke_golem') {
-        markEnemyDead(target);
-        for (let i = 0; i < 24; i++) {
-          particles.push({ x: target.x + (Math.random() - 0.5) * 60, y: target.y + (Math.random() - 0.5) * 60, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3, size: Math.random() * 10 + 5, color: Math.random() > 0.5 ? '#616161' : '#9e9e9e', start: now, life: 1000 });
-        }
-        clampParticles();
-        
-        if (progress.smokeCluster > 0) {
-          for (let i = 0; i < progress.smokeCluster; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * 25;
-            const clusterX = target.x + Math.cos(angle) * distance;
-            const clusterY = target.y + Math.sin(angle) * distance;
-            
-            let nearestCluster = null;
-            let minDist = Infinity;
-            for (const e of enemies) {
-              if (e.dead || e === target) continue;
-              const dist = Math.hypot(e.x - clusterX, e.y - clusterY);
-              if (dist < minDist) {
-                minDist = dist;
-                nearestCluster = e;
-              }
-            }
-            
-            if (nearestCluster && minDist < 150) {
-              const clusterDamage = Math.ceil(upgrades.smokeDamage / 2);
-              nearestCluster.hp -= clusterDamage;
-              
-              for (let j = 0; j < 8; j++) {
-                particles.push({ x: nearestCluster.x + (Math.random() - 0.5) * 30, y: nearestCluster.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 5 + 3, color: Math.random() > 0.5 ? '#999' : '#bbb', start: now, life: 600 });
-              }
-              
-              if (nearestCluster.hp <= 0 && !nearestCluster.dead) {
-                markEnemyDead(nearestCluster);
-              }
-            }
-          }
-          clampParticles();
-        }
-        return;
-      }
-      
-      if (target.type === 'golem' || target.type === 'tree_golem' || target.type === 'fire_golem') return;
-      
-      target.hp -= upgrades.smokeDamage;
+      if (!target) return;
 
-      for (let i = 0; i < 16; i++) {
-        particles.push({ x: target.x + (Math.random() - 0.5) * 40, y: target.y + (Math.random() - 0.5) * 40, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 8 + 4, color: Math.random() > 0.5 ? '#666' : '#888', start: now, life: 800 });
-      }
-      clampParticles();
+      const levelA = pathLevel('smoke', 'A');
+      const levelB = pathLevel('smoke', 'B');
 
-      if (target.hp <= 0 && !target.dead) {
-        if (progress.smokeCluster > 0) {
-          for (let i = 0; i < progress.smokeCluster; i++) {
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * 25;
-            const clusterX = target.x + Math.cos(angle) * distance;
-            const clusterY = target.y + Math.sin(angle) * distance;
-            
-            let nearestCluster = null;
-            let minDist = Infinity;
-            for (const e of enemies) {
-              if (e.dead || e === target) continue;
-              const dist = Math.hypot(e.x - clusterX, e.y - clusterY);
-              if (dist < minDist) {
-                minDist = dist;
-                nearestCluster = e;
-              }
-            }
-            
-            if (nearestCluster && minDist < 150) {
-              const clusterDamage = Math.ceil(upgrades.smokeDamage / 2);
-              nearestCluster.hp -= clusterDamage;
-              
-              for (let j = 0; j < 8; j++) {
-                particles.push({ x: nearestCluster.x + (Math.random() - 0.5) * 30, y: nearestCluster.y + (Math.random() - 0.5) * 30, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: Math.random() * 5 + 3, color: Math.random() > 0.5 ? '#999' : '#bbb', start: now, life: 600 });
-              }
-              
-              if (nearestCluster.hp <= 0 && !nearestCluster.dead) {
-                markEnemyDead(nearestCluster);
-              }
-            }
-          }
-          clampParticles();
-        }
-        
-        markEnemyDead(target);
+      let radius = 60;
+      if (levelA >= 1) radius *= 1.5;
+      if (levelB >= 2) radius *= 1.3;
+
+      const dealsDamage = !(levelA >= 3);
+      explodeSmokeAt(target.x, target.y, radius, dealsDamage);
+
+      if (levelA >= 2) {
+        smokeClouds.push({
+          x: target.x, y: target.y, radius,
+          expiresAt: now + 2000,
+          debuffSlow: levelA >= 3,
+          weaken: levelA >= 4,
+          stunDuration: levelA >= 5 ? wRepeats('smoke') * 400 : 0
+        });
       }
+
+      {
+        const chainChance = levelB >= 3 ? 0.25 + wRepeats('smoke') * 0.1 : 0;
+        if (chainChance > 0 && Math.random() < chainChance) {
+          const angle = Math.random() * Math.PI * 2;
+          const dist = 40 + Math.random() * 40;
+          explodeSmokeAt(target.x + Math.cos(angle) * dist, target.y + Math.sin(angle) * dist, radius * 0.6, true);
+        }
+        if (levelB >= 4) {
+          const ex = target.x, ey = target.y, r = radius;
+          setTimeout(() => { if (game.active && !game.paused) explodeSmokeAt(ex, ey, r, true); }, 250);
+        }
+      }
+    }
+
+    function totalDartsThrown() {
+      let total = upgrades.dartAmount;
+      const levelB = pathLevel('dart', 'B');
+      if (levelB >= 1) total += 1;
+      total += wRepeats('dart');
+      return total;
     }
 
     function shootDart() {
@@ -1253,37 +1490,44 @@ const QUESTION_BANK_FILES={
       if (now - lastDart < upgrades.dartCooldown) return;
       lastDart = now;
 
-      const directions = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
-      if (upgrades.dartAmount > 4) {
-        directions.push({x:0.707,y:-0.707},{x:0.707,y:0.707},{x:-0.707,y:0.707},{x:-0.707,y:-0.707});
+      const levelA = pathLevel('dart', 'A');
+      const levelB = pathLevel('dart', 'B');
+
+      let totalDarts = upgrades.dartAmount;
+      if (levelB >= 1) totalDarts += 1;
+      totalDarts += wRepeats('dart');
+
+      let angles = [];
+      if (levelA >= 1) {
+        // Sniper Darts: aim at the nearest enemies instead of fixed directions
+        const targets = enemies.filter(e => !e.dead)
+          .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y))
+          .slice(0, totalDarts);
+        for (const t of targets) angles.push(Math.atan2(t.y - player.y, t.x - player.x));
+        while (angles.length < totalDarts) angles.push(Math.random() * Math.PI * 2);
+      } else {
+        const directions = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0},{x:0.707,y:-0.707},{x:0.707,y:0.707},{x:-0.707,y:0.707},{x:-0.707,y:-0.707}];
+        const shuffled = directions.sort(() => Math.random() - 0.5);
+        for (let i = 0; i < totalDarts; i++) {
+          const dir = shuffled[i % shuffled.length];
+          angles.push(Math.atan2(dir.y, dir.x));
+        }
       }
 
-      const shuffled = directions.sort(() => Math.random() - 0.5);
-      const numDarts = Math.min(upgrades.dartAmount, directions.length);
-      
-      for (let i=0;i<numDarts;i++){
+      for (let i = 0; i < angles.length; i++) {
         if (darts.length >= MAX_DARTS) break;
-        const dir = shuffled[i];
-        
-        const spreadCount = 1 + progress.dartSpread;
-        for (let s = 0; s < spreadCount; s++) {
-          if (darts.length >= MAX_DARTS) break;
-          
-          const spreadAngle = (s - (spreadCount - 1) / 2) * 0.15;
-          const baseAngle = Math.atan2(dir.y, dir.x);
-          const finalAngle = baseAngle + spreadAngle;
-          
-          darts.push({ 
-            x: player.x, 
-            y: player.y, 
-            vx: Math.cos(finalAngle) * 4, 
-            vy: Math.sin(finalAngle) * 4, 
-            startX: player.x, 
-            startY: player.y, 
-            maxRange: upgrades.dartRange,
-            hitIds: []
-          });
-        }
+        const angle = angles[i];
+        darts.push({
+          x: player.x, y: player.y,
+          vx: Math.cos(angle) * 4, vy: Math.sin(angle) * 4,
+          startX: player.x, startY: player.y,
+          maxRange: upgrades.dartRange,
+          large: levelA >= 2,
+          boomerang: levelB >= 4,
+          returning: false,
+          broken: false,
+          hitIds: []
+        });
       }
     }
 
@@ -1299,7 +1543,7 @@ const QUESTION_BANK_FILES={
     }
 
     const deadQueue = [];
-    function markEnemyDead(e) {
+    function markEnemyDead(e, source) {
       if (e.dead) return;
       e.dead = true;
       deadQueue.push(e.id);
@@ -1307,6 +1551,19 @@ const QUESTION_BANK_FILES={
       player.exp += 10;
       player.kills++;
       progress.runCoins++;
+
+      // Enemies killed while standing in a stunning-mist smoke cloud always
+      // count as a smoke bomb kill, regardless of what actually finished them off.
+      if (e.inSmokeCloud) source = 'smoke';
+
+      if (source && progress.weapons[source]) {
+        const w = progress.weapons[source];
+        w.kills++;
+        if (!w.unlocked && w.kills >= WEAPON_UNLOCK_KILLS) {
+          w.unlocked = true;
+        }
+        saveProgress();
+      }
     }
     function sweepDeadEnemies() {
       if (deadQueue.length === 0) return;
@@ -1338,22 +1595,61 @@ const QUESTION_BANK_FILES={
 
         for (let i = bullets.length - 1; i >= 0; i--) {
           const b = bullets[i];
+
+          if (b.homing && b.homingTargetId != null) {
+            const target = enemies.find(en => en.id === b.homingTargetId && !en.dead);
+            if (target) {
+              const speed = Math.hypot(b.vx, b.vy);
+              const rv = norm(target.x - b.x, target.y - b.y);
+              const turn = 0.08;
+              b.vx = b.vx * (1 - turn) + rv.nx * speed * turn;
+              b.vy = b.vy * (1 - turn) + rv.ny * speed * turn;
+            } else {
+              // Locked target defeated/gone — stop homing, keep flying straight.
+              b.homing = false;
+              b.homingTargetId = null;
+            }
+          }
+
           b.x += b.vx; b.y += b.vy;
           b.rot += 0.35;
 
-          let bounced = false;
-          if (b.bounces > 0) {
-            if (b.x < 0 || b.x > 800) { b.vx *= -1; b.x = Math.max(0, Math.min(800, b.x)); b.bounces--; bounced = true; }
-            if (b.y < 0 || b.y > 600) { b.vy *= -1; b.y = Math.max(0, Math.min(600, b.y)); b.bounces--; bounced = true; }
+          if (b.x < -50 || b.x > 850 || b.y < -50 || b.y > 650) bullets.splice(i, 1);
+        }
+
+        // Poison pools left behind by poisoned enemies (Sniper Darts path)
+        for (let i = poisonPools.length - 1; i >= 0; i--) {
+          const p = poisonPools[i];
+          const nowP = Date.now();
+          if (nowP - p.created > p.life) { poisonPools.splice(i, 1); continue; }
+          for (const e of enemies) {
+            if (e.dead) continue;
+            if (Math.hypot(e.x - p.x, e.y - p.y) < 20) {
+              e.poisonUntil = Math.max(e.poisonUntil || 0, nowP + 1000);
+              e.poisonDmg = Math.max(e.poisonDmg || 0, p.dmg);
+            }
           }
-          if (!bounced && (b.x < -50 || b.x > 850 || b.y < -50 || b.y > 650)) bullets.splice(i, 1);
+        }
+        // Expire lingering smoke clouds (Stunning Mist path)
+        {
+          const nowC = Date.now();
+          smokeClouds = smokeClouds.filter(c => c.expiresAt > nowC);
+        }
+
+        // Storm of Steel magazine regen (passive recharge while in manual-fire mode)
+        if (pathLevel('shuriken', 'B') >= 3) {
+          const now = Date.now();
+          if (shurikenMag.current < shurikenMag.capacity && now - shurikenMag.lastRegen >= BASE_SHURIKEN_COOLDOWN) {
+            shurikenMag.current = Math.min(shurikenMag.capacity, shurikenMag.current + 1);
+            shurikenMag.lastRegen = now;
+          }
         }
 
         for (let i = shadowTraps.length - 1; i >= 0; i--) {
           const trap = shadowTraps[i];
           const now = Date.now();
           
-          if (now - trap.placed >= 20000) {
+          if (now - trap.placed >= (trap.lifetime || 20000)) {
             for (let k = 0; k < 12; k++) {
               const angle = Math.random() * Math.PI * 2;
               const speed = Math.random() * 2;
@@ -1363,12 +1659,26 @@ const QUESTION_BANK_FILES={
             continue;
           }
           
-          if (!trap.activated && now - trap.placed >= 500) trap.activated = true;
+          if (!trap.activated && now - trap.placed >= (trap.armDelay || 500)) trap.activated = true;
 
           if (trap.activated) {
-            const isUtilityTrap = progress.shadowUtility > 0;
-            const slowEffect = isUtilityTrap ? (progress.shadowUtility * 0.05) : 0;
-            
+            const levelA = pathLevel('trap', 'A');
+            const levelB = pathLevel('trap', 'B');
+            const repeats = wRepeats('trap');
+
+            // Minefield: pulling force nudges nearby enemies toward the trap
+            if (levelA >= 2) {
+              for (const e of enemies) {
+                if (e.dead) continue;
+                const d = Math.hypot(e.x - trap.x, e.y - trap.y);
+                if (d > 45 && d < 150 && Math.random() < 0.05) {
+                  const pv = norm(trap.x - e.x, trap.y - e.y);
+                  e.x += pv.nx * 0.6; e.y += pv.ny * 0.6;
+                }
+              }
+            }
+
+            const deadBefore = new Set(enemies.filter(e => e.dead).map(e => e.id));
             let any = false;
             let shouldExplode = false;
             
@@ -1377,25 +1687,36 @@ const QUESTION_BANK_FILES={
               const d = Math.hypot(e.x - trap.x, e.y - trap.y);
               if (d < 45) {
                 if (e.type === 'golem') {
-                  markEnemyDead(e);
+                  markEnemyDead(e, 'trap');
                   shouldExplode = true;
                   any = true;
-                } else if (isUtilityTrap) {
-                  e.speed *= (1 - slowEffect);
-                  e.hp -= progress.shadowUtility;
+                } else if (levelB >= 3) {
+                  // Steel Jaws: no direct damage, applies (possibly rupturing) bleed instead
+                  const bleedDmg = 1 + repeats;
+                  e.bleedUntil = Math.max(e.bleedUntil || 0, now + 3000);
+                  e.bleedNextTick = Math.min(e.bleedNextTick || Infinity, now + 500);
+                  e.bleedDmg = Math.max(e.bleedDmg || 0, bleedDmg);
+                  e.bleedDirect = true;
+                  e.ruptureReady = levelB >= 5;
+                  e.lastHit = now;
                   shouldExplode = true;
                 } else {
-                  e.hp -= upgrades.shadowDamage;
+                  let dmg = upgrades.shadowDamage;
+                  if (levelA >= 1 && !trap.firstProcUsed) dmg *= 1.5;
+                  e.hp -= dmg;
+                  e.lastHit = now;
                   shouldExplode = true;
                   
+                  const splashRadius = upgrades.shadowRadius * (1.1 + repeats * 0.1);
                   for (const other of enemies) {
                     if (other === e || other.dead) continue;
                     const od = Math.hypot(other.x - trap.x, other.y - trap.y);
-                    if (od < upgrades.shadowRadius * 1.1) {
+                    if (od < splashRadius) {
                       if (other.type === 'golem') {
-                        markEnemyDead(other);
+                        markEnemyDead(other, 'trap');
                       } else {
-                        other.hp -= Math.ceil(upgrades.shadowDamage / 2);
+                        other.hp -= Math.ceil(dmg / 2);
+                        other.lastHit = now;
                       }
                     }
                   }
@@ -1403,7 +1724,13 @@ const QUESTION_BANK_FILES={
                 any = true;
               }
             }
+            trap.firstProcUsed = true;
             
+            if (any) {
+              for (const e of enemies) if (!e.dead && e.hp <= 0) markEnemyDead(e, 'trap');
+            }
+            const killedThisTick = enemies.some(e => e.dead && !deadBefore.has(e.id));
+
             if (shouldExplode) {
               for (let k = 0; k < 24; k++) {
                 const angle = Math.random() * Math.PI * 2;
@@ -1412,16 +1739,11 @@ const QUESTION_BANK_FILES={
               }
               clampParticles();
               
-              const doubleTrapChance = progress.shadowDouble * 0.05;
-              if (Math.random() < doubleTrapChance) {
-                shadowTraps[i] = { x: trap.x, y: trap.y, placed: now, activated: false };
-              } else {
-                shadowTraps.splice(i, 1);
-              }
-            }
-            
-            if (any) {
-              for (const e of enemies) if (!e.dead && e.hp <= 0) markEnemyDead(e);
+              let persist = false;
+              if (levelB >= 4) persist = true;
+              else if (levelA >= 3 && killedThisTick && Math.random() < 0.05) persist = true;
+
+              if (!persist) shadowTraps.splice(i, 1);
             }
           }
         }
@@ -1449,14 +1771,82 @@ const QUESTION_BANK_FILES={
           if (e.dead) continue;
           e.anim += 0.08;
 
+          if (e.type === 'troll' && e.hp < e.maxHp) {
+            const now = Date.now();
+            if (now - (e.lastHit || 0) >= TROLL_REGEN_INTERVAL && now - (e.lastRegen || 0) >= TROLL_REGEN_INTERVAL) {
+              e.hp = Math.min(e.maxHp, e.hp + 1);
+              e.lastRegen = now;
+            }
+          }
+
+          const nowS = Date.now();
+
+          // Stunning-mist cloud detection (also drives kill-attribution + weaken/debuff/stun)
+          e.inSmokeCloud = false;
+          let cloudSpeedMult = 1;
+          e.cloudDamageAmp = 1;
+          for (const cloud of smokeClouds) {
+            if (nowS > cloud.expiresAt) continue;
+            if (Math.hypot(e.x - cloud.x, e.y - cloud.y) > cloud.radius) continue;
+            e.inSmokeCloud = true;
+            if (cloud.debuffSlow) cloudSpeedMult = Math.min(cloudSpeedMult, 0.5);
+            if (cloud.weaken) e.cloudDamageAmp = 1.25;
+            if (cloud.stunDuration) e.stunnedUntil = Math.max(e.stunnedUntil || 0, nowS + cloud.stunDuration);
+          }
+
+          // Sticky Tar (Parasite trap path) - continuous slow while inside an active trap
+          e.tarSlowed = false;
+          for (const trap of shadowTraps) {
+            if (!trap.stickyTar || !trap.activated) continue;
+            if (Math.hypot(e.x - trap.x, e.y - trap.y) < 45) { e.tarSlowed = true; break; }
+          }
+
+          // Poison DoT (Sniper Darts path)
+          if (e.poisonUntil && nowS < e.poisonUntil && nowS >= (e.poisonNextTick || 0)) {
+            e.hp -= e.poisonDmg || 1;
+            e.poisonNextTick = nowS + 500;
+            if (e.poisonTrail) poisonPools.push({ x: e.x, y: e.y, created: nowS, life: 3000, dmg: e.poisonDmg || 1 });
+            if (e.hp <= 0) { markEnemyDead(e, 'dart'); continue; }
+          }
+
+          // Bleed / Rupture DoT (Parasite trap path)
+          if (e.bleedUntil && nowS < e.bleedUntil && nowS >= (e.bleedNextTick || 0)) {
+            e.hp -= e.bleedDmg || 1;
+            e.bleedNextTick = nowS + 500;
+            if (e.hp <= 0) {
+              if (e.bleedDirect && e.ruptureReady) {
+                for (const other of enemies) {
+                  if (other === e || other.dead) continue;
+                  if (Math.hypot(other.x - e.x, other.y - e.y) < 70) {
+                    other.bleedUntil = nowS + 3000;
+                    other.bleedNextTick = Math.min(other.bleedNextTick || Infinity, nowS + 500);
+                    other.bleedDmg = Math.max(other.bleedDmg || 0, e.bleedDmg);
+                  }
+                }
+                for (let k = 0; k < 10; k++) {
+                  const angle = Math.random() * Math.PI * 2;
+                  particles.push({ x: e.x, y: e.y, vx: Math.cos(angle) * 2, vy: Math.sin(angle) * 2, size: 5, color: '#8b0000', start: nowS, life: 500 });
+                }
+              }
+              markEnemyDead(e, 'trap');
+              continue;
+            }
+          }
+
           const v = norm(player.x - e.x, player.y - e.y);
           
           let effectiveSpeed = e.speed;
           if (e.smokeBuffed) {
             effectiveSpeed *= 1.5;
           }
+          effectiveSpeed *= cloudSpeedMult;
+          if (e.tarSlowed) effectiveSpeed *= 0.5;
 
-          if (e.type === 'ghost') {
+          const isStunned = e.stunnedUntil && nowS < e.stunnedUntil;
+
+          if (isStunned) {
+            // Frozen: no movement, no special abilities this frame.
+          } else if (e.type === 'ghost') {
             e.sineOffset = (e.sineOffset || 0) + 0.025;
             const perpX = v.d === 0 ? 0 : -v.ny;
             const perpY = v.d === 0 ? 0 : v.nx;
@@ -1618,7 +2008,7 @@ const QUESTION_BANK_FILES={
               }
               
               if (e.type === 'fire_golem') {
-                if (b.ricochet < (progress.ricochet || 0)) {
+                if (b.hasBounced) {
                   bullets.splice(j, 1);
                   const now = Date.now();
                   for (let k = 0; k < 8; k++) {
@@ -1629,7 +2019,7 @@ const QUESTION_BANK_FILES={
                   clampParticles();
                   break;
                 } else {
-                  e.hp -= upgrades.damage;
+                  e.hp -= (b.dmg || upgrades.damage);
                   if (e.hp <= 0) {
                     if (e.size === 'full') {
                       for (let s = 0; s < 2; s++) {
@@ -1664,7 +2054,7 @@ const QUESTION_BANK_FILES={
                         });
                       }
                     }
-                    markEnemyDead(e);
+                    markEnemyDead(e, 'shuriken');
                   }
                   bullets.splice(j, 1);
                   break;
@@ -1672,8 +2062,14 @@ const QUESTION_BANK_FILES={
               }
               
               if (!e.metal) {
-                e.hp -= upgrades.damage;
-                if (e.hp <= 0) markEnemyDead(e);
+                const dmgDealt = b.dmg || upgrades.damage;
+                e.hp -= dmgDealt;
+                e.lastHit = Date.now();
+                if (e.hp <= 0) {
+                  markEnemyDead(e, 'shuriken');
+                } else if (b.stunOnHit) {
+                  e.stunnedUntil = Date.now() + 1200;
+                }
               } else {
                 const now = Date.now();
                 for (let k = 0; k < 8; k++) {
@@ -1687,13 +2083,24 @@ const QUESTION_BANK_FILES={
               b.hitIds.push(e.id);
               let removeBullet = true;
 
-              if (b.ricochet > 0 && removeBullet) {
+              if (b.fullRicochets > 0) {
                 const nearest = findNearest(b.x, b.y, b.hitIds);
                 if (nearest) {
                   const rv = norm(nearest.x - b.x, nearest.y - b.y);
                   const speed = Math.min(8, Math.hypot(b.vx, b.vy));
                   b.vx = rv.nx * speed; b.vy = rv.ny * speed;
-                  b.ricochet--; removeBullet = false;
+                  b.fullRicochets--; b.hasBounced = true; removeBullet = false;
+                }
+              } else if (b.falloffRicochet) {
+                const nextDmg = (b.dmg || upgrades.damage) / 2;
+                if (nextDmg >= 1) {
+                  const nearest = findNearest(b.x, b.y, b.hitIds);
+                  if (nearest) {
+                    const rv = norm(nearest.x - b.x, nearest.y - b.y);
+                    const speed = Math.min(8, Math.hypot(b.vx, b.vy));
+                    b.vx = rv.nx * speed; b.vy = rv.ny * speed;
+                    b.dmg = nextDmg; b.hasBounced = true; removeBullet = false;
+                  }
                 }
               }
               if (removeBullet) { bullets.splice(j, 1); break; }
@@ -1705,7 +2112,17 @@ const QUESTION_BANK_FILES={
           const d = darts[i];
           d.x += d.vx; d.y += d.vy;
           const traveled = Math.hypot(d.x - d.startX, d.y - d.startY);
-          if (traveled > d.maxRange || d.x < 0 || d.x > 800 || d.y < 0 || d.y > 600) { darts.splice(i, 1); continue; }
+
+          if (d.boomerang && !d.returning && traveled > d.maxRange) {
+            d.returning = true;
+            const rv = norm(player.x - d.x, player.y - d.y);
+            const speed = Math.hypot(d.vx, d.vy) || 4;
+            d.vx = rv.nx * speed; d.vy = rv.ny * speed;
+          } else if (d.returning) {
+            if (Math.hypot(d.x - player.x, d.y - player.y) < 20) { darts.splice(i, 1); continue; }
+          } else if (traveled > d.maxRange || d.x < 0 || d.x > 800 || d.y < 0 || d.y > 600) {
+            darts.splice(i, 1); continue;
+          }
 
           let hit = false;
           for (const e of enemies) {
@@ -1713,28 +2130,11 @@ const QUESTION_BANK_FILES={
             if (d.hitIds && d.hitIds.includes(e.id)) continue;
             
             const dist = Math.hypot(d.x - e.x, d.y - e.y);
-            if (Number.isFinite(dist) && dist < 30) {
+            const hitRadius = d.large ? 38 : 30;
+            if (Number.isFinite(dist) && dist < hitRadius) {
               if (e.type === 'tree_golem') {
-                markEnemyDead(e);
+                markEnemyDead(e, 'dart');
                 rootSpikes = rootSpikes.filter(root => root.ownerId !== e.id);
-                
-                if (progress.dartShatter > 0) {
-                  for (let s = 0; s < progress.dartShatter; s++) {
-                    if (darts.length >= MAX_DARTS) break;
-                    const angle = Math.random() * Math.PI * 2;
-                    darts.push({
-                      x: e.x,
-                      y: e.y,
-                      vx: Math.cos(angle) * 3,
-                      vy: Math.sin(angle) * 3,
-                      startX: e.x,
-                      startY: e.y,
-                      maxRange: upgrades.dartRange * 0.5,
-                      hitIds: [e.id]
-                    });
-                  }
-                }
-                
                 darts.splice(i, 1);
                 hit = true;
                 break;
@@ -1745,27 +2145,43 @@ const QUESTION_BANK_FILES={
                 hit = true;
                 break;
               }
-              
-              e.hp -= upgrades.damage;
+
+              const levelA = pathLevel('dart', 'A');
+              const levelB = pathLevel('dart', 'B');
+              const wasFullHp = e.hp === e.maxHp;
+
+              let dmgDealt = upgrades.damage;
+              if (levelA >= 4 && wasFullHp) dmgDealt *= 2;
+              if (e.cloudDamageAmp && e.cloudDamageAmp > 1) dmgDealt *= e.cloudDamageAmp;
+
+              e.hp -= dmgDealt;
+              e.lastHit = Date.now();
+
+              if (levelA >= 3) {
+                const poisonDmg = 1 + wRepeats('dart');
+                e.poisonUntil = Math.max(e.poisonUntil || 0, Date.now() + 3000);
+                e.poisonNextTick = Math.min(e.poisonNextTick || Infinity, Date.now() + 500);
+                e.poisonDmg = Math.max(e.poisonDmg || 0, poisonDmg);
+                if (levelA >= 5) e.poisonTrail = true;
+              }
               
               if (e.hp <= 0) {
-                markEnemyDead(e);
-                
-                if (progress.dartShatter > 0) {
-                  for (let s = 0; s < progress.dartShatter; s++) {
-                    if (darts.length >= MAX_DARTS) break;
-                    const angle = Math.random() * Math.PI * 2;
-                    darts.push({
-                      x: e.x,
-                      y: e.y,
-                      vx: Math.cos(angle) * 3,
-                      vy: Math.sin(angle) * 3,
-                      startX: e.x,
-                      startY: e.y,
-                      maxRange: upgrades.dartRange * 0.5,
-                      hitIds: [e.id]
-                    });
-                  }
+                markEnemyDead(e, 'dart');
+              } else if (levelB >= 3 && !d.broken) {
+                // Chaos Volley: broken darts split into smaller darts on hit, bouncing in cardinal directions
+                const cardinals = [{x:0,y:-1},{x:1,y:0},{x:0,y:1},{x:-1,y:0}];
+                const numBroken = Math.min(totalDartsThrown(), 4);
+                for (let s = 0; s < numBroken; s++) {
+                  if (darts.length >= MAX_DARTS) break;
+                  const dir = cardinals[s % cardinals.length];
+                  darts.push({
+                    x: e.x, y: e.y,
+                    vx: dir.x * 3, vy: dir.y * 3,
+                    startX: e.x, startY: e.y,
+                    maxRange: upgrades.dartRange * 0.5,
+                    large: false, boomerang: false, returning: false, broken: true,
+                    hitIds: [e.id]
+                  });
                 }
               }
               
@@ -1776,6 +2192,7 @@ const QUESTION_BANK_FILES={
           }
           if (hit) continue;
         }
+
 
         for (let i = enemyArrows.length - 1; i >= 0; i--) {
           const a = enemyArrows[i];
@@ -1812,6 +2229,7 @@ const QUESTION_BANK_FILES={
       else if (type === 'eye') { mainColor = '#8b00ff'; altColor1 = '#ffffff'; altColor2 = '#6a00cc'; }
       else if (type === 'archer') { mainColor = '#e8dcc8'; altColor1 = '#d4c8b0'; altColor2 = '#f0e4d0'; }
       else if (type === 'golem') { mainColor = '#5d4e37'; altColor1 = '#7d6e47'; altColor2 = '#4d3e27'; }
+      else if (type === 'troll') { mainColor = '#6b8e4e'; altColor1 = '#4b5d3a'; altColor2 = '#8bab5e'; }
 
       for (let i = 0; i < 8; i++) {
         const angle = (Math.PI * 2 * i) / 8;
@@ -1862,6 +2280,24 @@ const QUESTION_BANK_FILES={
       ctx.globalAlpha = 1;
     }
 
+    function drawSmokeCloud(cloud) {
+      ctx.globalAlpha = 0.28;
+      ctx.fillStyle = '#8899aa';
+      ctx.beginPath();
+      ctx.arc(cloud.x, cloud.y, cloud.radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawPoisonPool(p) {
+      ctx.globalAlpha = 0.35;
+      ctx.fillStyle = '#39ff6a';
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 16, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+
     function draw() {
       drawBackground();
       
@@ -1871,6 +2307,8 @@ const QUESTION_BANK_FILES={
         }
       }
       
+      smokeClouds.forEach(drawSmokeCloud);
+      poisonPools.forEach(drawPoisonPool);
       shadowTraps.forEach(drawShadowTrap);
       rootSpikes.forEach(drawRootSpike);
       enemies.forEach(drawEnemy);
@@ -2053,6 +2491,73 @@ const QUESTION_BANK_FILES={
       document.getElementById('upgradeOverlay').classList.add('show');
     }
 
+    const WEAPON_ABILITY_INFO = {
+      shuriken: {
+        A: [
+          { name: '⚡ Faster Shurikens', desc: 'Throw 10% faster' },
+          { name: '🎯 Homing', desc: 'Shurikens slightly curve toward nearby enemies' },
+          { name: '↩️ Ricochet', desc: 'Bounce to another enemy, losing half damage each bounce (despawns below 1 dmg)' },
+          { name: '😵 Stun', desc: 'Non-lethal hits stun the enemy' },
+          { name: '💯 Full-Damage Ricochet', desc: '+1 bounce at full damage before the damage-halving ricochet kicks in (repeatable)' }
+        ],
+        B: [
+          { name: '➕ +1 Shuriken', desc: 'Throw an extra shuriken every shot' },
+          { name: '📐 Wider Spread', desc: 'Shurikens fire in a wider spread' },
+          { name: '🖱️ Manual Fire', desc: 'Click to throw from a magazine (2 base) instead of auto-firing' },
+          { name: '🌀 Orbit', desc: 'Shurikens orbit you while waiting to be thrown' },
+          { name: '📦 +1 Magazine', desc: '+1 magazine capacity (repeatable)' }
+        ]
+      },
+      dart: {
+        A: [
+          { name: '🧭 Enemy Direction', desc: 'Darts prioritize the nearest enemies instead of random directions' },
+          { name: '🔺 Sharper Tips', desc: 'Larger darts with a bigger hitbox' },
+          { name: '☠️ Poison Darts', desc: 'Deals damage over time' },
+          { name: '🎯 Deadly Precision', desc: 'Critical hits (2x damage) against full-health enemies' },
+          { name: '🧪 Poison Trail', desc: 'Poisoned enemies leave a damaging trail; increases poison damage (repeatable)' }
+        ],
+        B: [
+          { name: '➕ +1 Dart', desc: 'Fire an extra dart' },
+          { name: '⚡ Faster Fire Rate', desc: 'Darts fire more often' },
+          { name: '💥 Broken Darts', desc: 'On hit, breaks into smaller darts that bounce off in cardinal directions' },
+          { name: '🪃 Boomerang Darts', desc: 'Darts return toward you after reaching max range' },
+          { name: '➕ More Darts', desc: '+1 dart fired (repeatable)' }
+        ]
+      },
+      smoke: {
+        A: [
+          { name: '💨 Larger Explosion', desc: '+50% blast radius' },
+          { name: '☁️ Lingering Smoke', desc: 'The cloud lingers for 2 seconds' },
+          { name: '🐌 Debuff Cloud', desc: 'The cloud deals no damage, but halves enemy speed' },
+          { name: '⚠️ Weakening Smoke', desc: 'Enemies in the cloud take +25% damage from all weapons' },
+          { name: '😵 Stunning Cloud', desc: 'Enemies in the cloud are stunned; duration increases (repeatable)' }
+        ],
+        B: [
+          { name: '⚡ Faster Recharge', desc: 'Smoke bomb recharges 10% faster' },
+          { name: '💥 Bigger Blast', desc: '+30% blast radius' },
+          { name: '⛓️ Chain Reaction', desc: 'Chance to spawn a smaller secondary bomb nearby' },
+          { name: '💣 Double Detonation', desc: 'The explosion triggers twice' },
+          { name: '📈 Higher Chain Chance', desc: '+10% chain reaction chance (repeatable)' }
+        ]
+      },
+      trap: {
+        A: [
+          { name: '⏱️ Delayed Explosion', desc: 'Arms slower, but its first hit deals 50% bonus damage' },
+          { name: '🧲 Pulling Force', desc: 'Chance to pull nearby enemies toward the trap' },
+          { name: '♻️ Respawning Trap', desc: '5% chance a kill leaves the trap behind, active' },
+          { name: '💥 Larger Explosion', desc: '+10% splash radius' },
+          { name: '💥 Larger Explosion+', desc: '+10% more splash radius (repeatable)' }
+        ],
+        B: [
+          { name: '⏳ Longer Lifetime', desc: '+50% trap lifetime' },
+          { name: '🍯 Sticky Tar', desc: 'Slows enemies touching the trap' },
+          { name: '🦷 Steel Jaws', desc: 'Deals no direct damage, but causes bleed to anything entering it' },
+          { name: '♾️ Persistent Trap', desc: "Doesn't despawn on a kill, only once its lifetime ends" },
+          { name: '🩸 Bleeding Shrapnel', desc: 'Bleed becomes rupture: direct victims explode on death, spreading bleed nearby (repeatable, increases both)' }
+        ]
+      }
+    };
+
     function renderShop() {
       const container = document.getElementById('shopItems');
       container.innerHTML = '';
@@ -2063,48 +2568,199 @@ const QUESTION_BANK_FILES={
       
       addShopItem(container, {id: 'powerup', name: '⭐ Starting Powerups', desc: 'Choose powerups before run', base: 40, mult: 1.5, owned: progress.powerupStart, canBuy: true});
 
-      const section2 = document.createElement('div');
-      section2.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">💣 Smoke Bomb Upgrades</h3>';
-      container.appendChild(section2);
-      
-      addShopItem(container, {id: 'smoke', name: '💣 Start with Smoke Bomb', desc: 'Begin with smoke bomb unlocked', base: 50, mult: 1.5, owned: progress.smokeStart, canBuy: progress.smokeStart === 0});
-      
-      if (progress.smokeStart > 0) {
-        addShopItem(container, {id: 'smokePriority', name: '🎯 Priority Shot', desc: '+5% chance to target closest enemy', base: 80, mult: 1.5, owned: progress.smokePriority, canBuy: true});
-        addShopItem(container, {id: 'smokeCluster', name: '💥 Cluster Shot', desc: 'Spawn cluster bombs on defeat (radius 25)', base: 80, mult: 1.5, owned: progress.smokeCluster, canBuy: true});
+      for (const key of ['shuriken', 'dart', 'smoke', 'trap']) {
+        renderWeaponShopSection(container, key);
       }
-
-      const section3 = document.createElement('div');
-      section3.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🎯 Blow Dart Upgrades</h3>';
-      container.appendChild(section3);
-      
-      addShopItem(container, {id: 'dart', name: '🎯 Start with Blow Dart', desc: 'Begin with blow dart unlocked', base: 50, mult: 1.5, owned: progress.dartStart, canBuy: progress.dartStart === 0});
-      
-      if (progress.dartStart > 0) {
-        addShopItem(container, {id: 'dartSpread', name: '📐 Increase Dart Spread', desc: 'Fire extra darts in tight cluster', base: 80, mult: 1.5, owned: progress.dartSpread, canBuy: true});
-        addShopItem(container, {id: 'dartShatter', name: '💎 Shatter Dart', desc: 'Darts explode into smaller darts on defeat', base: 80, mult: 1.5, owned: progress.dartShatter, canBuy: true});
-      }
-
-      const section4 = document.createElement('div');
-      section4.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🌑 Shadow Trap Upgrades</h3>';
-      container.appendChild(section4);
-      
-      addShopItem(container, {id: 'shadow', name: '🌑 Start with Shadow Trap', desc: 'Begin with shadow trap unlocked', base: 50, mult: 1.5, owned: progress.shadowStart, canBuy: progress.shadowStart === 0});
-      
-      if (progress.shadowStart > 0) {
-        addShopItem(container, {id: 'shadowUtility', name: '🛡️ Utility Trap', desc: 'Slow enemies 5%, +1 bonus damage per level', base: 80, mult: 1.5, owned: progress.shadowUtility, canBuy: true});
-        addShopItem(container, {id: 'shadowDouble', name: '♻️ Double Trap', desc: '+5% chance to respawn on same spot', base: 80, mult: 1.5, owned: progress.shadowDouble, canBuy: true});
-      }
-
-      const section5 = document.createElement('div');
-      section5.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">⚔️ Shuriken Upgrades</h3>';
-      container.appendChild(section5);
-      
-      addShopItem(container, {id: 'reverse', name: '🔄 Reverse Shot', desc: 'Fire opposite direction', base: 80, mult: 1.5, owned: progress.reverseShot, canBuy: progress.reverseShot === 0});
-      addShopItem(container, {id: 'wall', name: '🔲 Wall Bounce', desc: 'Shurikens bounce off walls', base: 80, mult: 1.5, owned: progress.wallBounce, canBuy: true});
-      addShopItem(container, {id: 'rico', name: '⚡ Ricochet Shot', desc: 'Bounce to nearest enemy', base: 80, mult: 1.5, owned: progress.ricochet, canBuy: true});
 
       document.getElementById('totalCoins').textContent = progress.totalCoins;
+    }
+
+    function renderWeaponShopSection(container, key) {
+      const w = progress.weapons[key];
+      const section = document.createElement('div');
+      section.innerHTML = `<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">${WEAPON_NAMES[key]}</h3>`;
+      container.appendChild(section);
+
+      if (!w.unlocked) {
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+        div.innerHTML = `
+          <div class="shop-header">
+            <div class="shop-name">🔒 Locked</div>
+          </div>
+          <div class="shop-desc">Kill ${WEAPON_UNLOCK_KILLS} enemies with this weapon in a run to permanently unlock starting with it. (${Math.min(w.kills, WEAPON_UNLOCK_KILLS)}/${WEAPON_UNLOCK_KILLS})</div>
+        `;
+        container.appendChild(div);
+        return;
+      }
+
+      if (!w.path) {
+        const noteDiv = document.createElement('div');
+        noteDiv.className = 'shop-item';
+        noteDiv.style.cssText = 'border-color:#d4af37;';
+        noteDiv.innerHTML = `
+          <div class="shop-desc" style="color:#d4af37;">Levels 1 &amp; 2 can be bought freely in <b>either</b> path below to try them out — once bought, they stay active <b>forever</b>, even after you commit. Buying Level 3 in a path <b>locks that path in</b>; the other path just can't progress past Level 2 anymore.</div>
+        `;
+        container.appendChild(noteDiv);
+
+        renderPathTrack(container, key, 'A', w.levelA);
+        renderPathTrack(container, key, 'B', w.levelB);
+        return;
+      }
+
+      // Path already committed — show a clear level-by-level checklist for that path.
+      const abilities = WEAPON_ABILITY_INFO[key][w.path];
+      const listDiv = document.createElement('div');
+      listDiv.className = 'shop-item';
+      let rows = '';
+      for (let lvl = 1; lvl <= 5; lvl++) {
+        const info = abilities[lvl - 1];
+        if (lvl < 5) {
+          const owned = w.level >= lvl;
+          rows += `<div style="padding:3px 0; color:${owned ? '#2ecc71' : '#888'};">${owned ? '✅' : '⬜'} Lv${lvl}: ${info.name}</div>`;
+        } else {
+          const count = wRepeats(key);
+          const owned = count > 0;
+          rows += `<div style="padding:3px 0; color:${owned ? '#2ecc71' : '#888'};">${owned ? '✅' : '⬜'} Lv5+: ${info.name}${owned ? ` (x${count})` : ''}</div>`;
+        }
+      }
+      listDiv.innerHTML = `
+        <div class="shop-header">
+          <div class="shop-name">Path ${w.path} — Level ${w.level}${w.level >= 5 ? ` (+${wRepeats(key)})` : ''}</div>
+        </div>
+        ${rows}
+      `;
+      container.appendChild(listDiv);
+
+      const otherPath = w.path === 'A' ? 'B' : 'A';
+      const otherLevel = otherPath === 'A' ? Math.min(w.levelA, 2) : Math.min(w.levelB, 2);
+      if (otherLevel > 0) {
+        const otherAbilities = WEAPON_ABILITY_INFO[key][otherPath];
+        let otherRows = '';
+        for (let lvl = 1; lvl <= otherLevel; lvl++) {
+          otherRows += `<div style="padding:3px 0; color:#2ecc71;">✅ Lv${lvl}: ${otherAbilities[lvl - 1].name}</div>`;
+        }
+        const otherDiv = document.createElement('div');
+        otherDiv.className = 'shop-item';
+        otherDiv.innerHTML = `
+          <div class="shop-header">
+            <div class="shop-name">Path ${otherPath} (still active, capped at Lv2)</div>
+          </div>
+          ${otherRows}
+        `;
+        container.appendChild(otherDiv);
+      }
+
+      const nextLevel = w.level + 1;
+      const nextLevelIdx = Math.min(nextLevel, 5);
+      const nextInfo = abilities[nextLevelIdx - 1];
+      const cost = weaponLevelCost(key, nextLevel, w.repeatBuys);
+      const canAffordCoin = progress.totalCoins >= cost.coin;
+      const hasKills = w.kills >= cost.kills;
+      const canBuy = canAffordCoin && hasKills;
+
+      const buyDiv = document.createElement('div');
+      buyDiv.className = 'shop-item';
+      buyDiv.innerHTML = `
+        <div class="shop-header">
+          <div class="shop-name">Next — Level ${nextLevel}: ${nextInfo.name}</div>
+          <div class="shop-cost">🪙 ${cost.coin}</div>
+        </div>
+        <div class="shop-desc">${nextInfo.desc}</div>
+        <div class="shop-desc" style="color:${hasKills ? '#2ecc71' : '#e74c3c'};">Kills with this weapon: ${w.kills}/${cost.kills}</div>
+        <button class="shop-btn" id="buy_${key}_lvl" ${!canBuy ? 'disabled' : ''}>
+          ${!hasKills ? 'Need More Kills' : !canAffordCoin ? 'Need More Coin' : 'Buy'}
+        </button>
+      `;
+      container.appendChild(buyDiv);
+      if (canBuy) document.getElementById(`buy_${key}_lvl`).onclick = () => buyWeaponLevel(key, cost.coin);
+    }
+
+    function renderPathTrack(container, key, path, currentLevel) {
+      const abilities = WEAPON_ABILITY_INFO[key][path];
+      const div = document.createElement('div');
+      div.className = 'shop-item';
+
+      let rows = '';
+      for (let lvl = 1; lvl <= 2; lvl++) {
+        const info = abilities[lvl - 1];
+        const owned = currentLevel >= lvl;
+        rows += `<div style="padding:3px 0; color:${owned ? '#2ecc71' : '#ccc'};">${owned ? '✅' : '⬜'} Lv${lvl}: ${info.name} <span style="color:#888;">— ${info.desc}</span></div>`;
+      }
+
+      div.innerHTML = `<div class="shop-header"><div class="shop-name">Path ${path}${currentLevel > 0 ? ` (Lv${currentLevel})` : ''}</div></div>${rows}`;
+      container.appendChild(div);
+
+      if (currentLevel < 2) {
+        const nextLevel = currentLevel + 1;
+        const cost = weaponLevelCost(key, nextLevel, 0);
+        const canAfford = progress.totalCoins >= cost.coin;
+        const buyDiv = document.createElement('div');
+        buyDiv.className = 'shop-item';
+        buyDiv.innerHTML = `
+          <div class="shop-header">
+            <div class="shop-name">Buy Path ${path} Lv${nextLevel}</div>
+            <div class="shop-cost">🪙 ${cost.coin}</div>
+          </div>
+          <button class="shop-btn" id="buy_${key}_${path}_pre" ${!canAfford ? 'disabled' : ''}>${canAfford ? 'Buy' : 'Need More Coin'}</button>
+        `;
+        container.appendChild(buyDiv);
+        if (canAfford) document.getElementById(`buy_${key}_${path}_pre`).onclick = () => buyPreCommitLevel(key, path, cost.coin);
+      } else {
+        const cost = weaponLevelCost(key, 3, 0);
+        const canAffordCoin = progress.totalCoins >= cost.coin;
+        const w = progress.weapons[key];
+        const hasKills = w.kills >= cost.kills;
+        const canBuy = canAffordCoin && hasKills;
+        const lockDiv = document.createElement('div');
+        lockDiv.className = 'shop-item';
+        lockDiv.style.cssText = 'border-color:#e67e22;';
+        lockDiv.innerHTML = `
+          <div class="shop-header">
+            <div class="shop-name">🔒 Lock in Path ${path} — Level 3: ${abilities[2].name}</div>
+            <div class="shop-cost">🪙 ${cost.coin}</div>
+          </div>
+          <div class="shop-desc">${abilities[2].desc}</div>
+          <div class="shop-desc" style="color:${hasKills ? '#2ecc71' : '#e74c3c'};">Kills with this weapon: ${w.kills}/${cost.kills}</div>
+          <button class="shop-btn" id="lock_${key}_${path}" ${!canBuy ? 'disabled' : ''}>
+            ${!hasKills ? 'Need More Kills' : !canAffordCoin ? 'Need More Coin' : `Lock In Path ${path}`}
+          </button>
+        `;
+        container.appendChild(lockDiv);
+        if (canBuy) document.getElementById(`lock_${key}_${path}`).onclick = () => chooseWeaponPath(key, path, cost.coin);
+      }
+    }
+
+    function buyPreCommitLevel(key, path, cost) {
+      if (progress.totalCoins < cost) return;
+      progress.totalCoins -= cost;
+      const w = progress.weapons[key];
+      if (path === 'A') w.levelA++; else w.levelB++;
+      saveProgress();
+      renderShop();
+      updateUI();
+    }
+
+    function chooseWeaponPath(key, path, cost) {
+      if (progress.totalCoins < cost) return;
+      progress.totalCoins -= cost;
+      const w = progress.weapons[key];
+      w.path = path;
+      w.level = 3;
+      saveProgress();
+      renderShop();
+      updateUI();
+    }
+
+    function buyWeaponLevel(key, cost) {
+      if (progress.totalCoins < cost) return;
+      progress.totalCoins -= cost;
+      const w = progress.weapons[key];
+      w.level++;
+      if (w.level >= 5) w.repeatBuys++;
+      saveProgress();
+      renderShop();
+      updateUI();
     }
     
     function addShopItem(container, item) {
@@ -2136,19 +2792,8 @@ const QUESTION_BANK_FILES={
       progress.totalCoins -= cost;
 
       if (id === 'powerup') progress.powerupStart++;
-      else if (id === 'smoke') progress.smokeStart++;
-      else if (id === 'smokePriority') progress.smokePriority++;
-      else if (id === 'smokeCluster') progress.smokeCluster++;
-      else if (id === 'dart') progress.dartStart++;
-      else if (id === 'dartSpread') progress.dartSpread++;
-      else if (id === 'dartShatter') progress.dartShatter++;
-      else if (id === 'shadow') progress.shadowStart++;
-      else if (id === 'shadowUtility') progress.shadowUtility++;
-      else if (id === 'shadowDouble') progress.shadowDouble++;
-      else if (id === 'reverse') progress.reverseShot++;
-      else if (id === 'wall') progress.wallBounce++;
-      else if (id === 'rico') progress.ricochet++;
 
+      saveProgress();
       renderShop();
       updateUI();
     }
@@ -2167,6 +2812,7 @@ const QUESTION_BANK_FILES={
 
         setTimeout(() => {
           progress.totalCoins += progress.runCoins;
+          saveProgress();
 
           document.getElementById('finalLvl').textContent = player.level;
           document.getElementById('finalKills').textContent = player.kills;
@@ -2187,6 +2833,7 @@ const QUESTION_BANK_FILES={
       player.level = 1; player.exp = 0; player.kills = 0;
 
       enemies = []; bullets = []; particles = []; enemyArrows = []; shadowTraps = []; darts = []; rootSpikes = [];
+      smokeClouds = []; poisonPools = [];
       nextEnemyId = 1;
       nextRootId = 1;
 
@@ -2198,17 +2845,27 @@ const QUESTION_BANK_FILES={
       upgrades.projSpeed = 5;
       upgrades.damage = 1;
       upgrades.cooldown = 900;
-      upgrades.smokeUnlocked = progress.smokeStart > 0;
+      if (pathLevel('shuriken', 'A') >= 1) upgrades.cooldown *= 0.9;
+
+      upgrades.smokeUnlocked = wUnlocked('smoke');
       upgrades.smokeDamage = 1;
       upgrades.smokeCooldown = 4000;
-      upgrades.shadowUnlocked = progress.shadowStart > 0;
+      if (pathLevel('smoke', 'B') >= 1) upgrades.smokeCooldown *= 0.9;
+
+      upgrades.shadowUnlocked = wUnlocked('trap');
       upgrades.shadowDamage = 2;
       upgrades.shadowRadius = 100;
       upgrades.shadowCooldown = 10000;
-      upgrades.dartUnlocked = progress.dartStart > 0;
+
+      upgrades.dartUnlocked = wUnlocked('dart');
       upgrades.dartAmount = 2;
       upgrades.dartRange = 120;
       upgrades.dartCooldown = 3000;
+      if (pathLevel('dart', 'B') >= 2) upgrades.dartCooldown *= 0.9;
+
+      shurikenMag.capacity = 2 + wRepeats('shuriken');
+      shurikenMag.current = shurikenMag.capacity;
+      shurikenMag.lastRegen = Date.now();
 
       progress.runCoins = 10;
 
@@ -2247,7 +2904,15 @@ const QUESTION_BANK_FILES={
       if (upgrades.shadowUnlocked && shadowReady) {
         const now = Date.now();
         if (now - lastShadow >= upgrades.shadowCooldown) {
-          shadowTraps.push({ x: clickX, y: clickY, placed: now, activated: false });
+          const levelA = pathLevel('trap', 'A');
+          const levelB = pathLevel('trap', 'B');
+          shadowTraps.push({
+            x: clickX, y: clickY, placed: now, activated: false,
+            armDelay: levelA >= 1 ? 1200 : 500,
+            lifetime: levelB >= 1 ? 30000 : 20000,
+            stickyTar: levelB >= 2,
+            firstProcUsed: false
+          });
           lastShadow = now;
           shadowReady = false;
           setTimeout(() => { shadowReady = true; }, upgrades.shadowCooldown);
@@ -2255,6 +2920,13 @@ const QUESTION_BANK_FILES={
       }
 
       targetX = clickX; targetY = clickY;
+
+      if (pathLevel('shuriken', 'B') >= 3) {
+        if (shurikenMag.current > 0) {
+          fireShurikenVolley();
+          shurikenMag.current--;
+        }
+      }
     });
 
 
