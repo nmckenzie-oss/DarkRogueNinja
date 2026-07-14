@@ -56,6 +56,106 @@
     }
     .panel div { margin: 5px 0; }
 
+    #gameWrap {
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      width: 800px;
+    }
+
+    #levelBarWrap {
+      position: relative;
+      width: 100%;
+      height: 22px;
+      background: rgba(26, 10, 46, 0.95);
+      border: 3px solid #6a0572;
+      border-bottom: none;
+      border-radius: 6px 6px 0 0;
+      overflow: hidden;
+    }
+    #levelBarFill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #00d4ff, #6a0572);
+      transition: width 0.2s ease-out;
+    }
+    #levelBarText {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      text-shadow: 0 0 4px #000, 0 0 4px #000;
+      pointer-events: none;
+    }
+
+    #weaponBars {
+      display: flex;
+      gap: 8px;
+      width: 100%;
+      background: rgba(26, 10, 46, 0.95);
+      border: 3px solid #6a0572;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      padding: 8px 10px;
+      box-sizing: border-box;
+      justify-content: center;
+    }
+    .weapon-bar {
+      flex: 1;
+      max-width: 180px;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .weapon-bar-label {
+      font-size: 11px;
+      color: #e94560;
+      font-weight: bold;
+      text-align: center;
+    }
+    .weapon-bar-track {
+      position: relative;
+      height: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 2px solid #6a0572;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+    .weapon-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #ffb300, #2ecc71);
+    }
+    .weapon-bar-fill.ready { background: linear-gradient(90deg, #2ecc71, #00ff88); }
+
+    #unlockToast {
+      position: fixed;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: linear-gradient(135deg, #1a0a2e, #3a0a4e);
+      border: 3px solid #ffd700;
+      color: #ffd700;
+      font-weight: bold;
+      font-size: 18px;
+      padding: 14px 24px;
+      border-radius: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      z-index: 999;
+      text-align: center;
+      box-shadow: 0 0 30px rgba(255, 215, 0, 0.5);
+    }
+    #unlockToast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     .overlay {
       position: fixed; top: 0; left: 0; width: 100%; height: 100%;
       background: rgba(0, 0, 0, 0.95);
@@ -176,7 +276,31 @@
 </head>
 <body>
   <div id="app">
-    <canvas id="canvas" width="800" height="600" aria-label="Game canvas"></canvas>
+    <div id="gameWrap">
+      <div id="levelBarWrap">
+        <div id="levelBarFill"></div>
+        <div id="levelBarText">Level 1 — 0/50 XP</div>
+      </div>
+      <canvas id="canvas" width="800" height="600" aria-label="Game canvas"></canvas>
+      <div id="weaponBars">
+        <div class="weapon-bar" id="bar-shuriken">
+          <div class="weapon-bar-label">🥷 Shuriken</div>
+          <div class="weapon-bar-track"><div class="weapon-bar-fill" id="fill-shuriken"></div></div>
+        </div>
+        <div class="weapon-bar" id="bar-dart" style="display:none;">
+          <div class="weapon-bar-label">🏹 Dart</div>
+          <div class="weapon-bar-track"><div class="weapon-bar-fill" id="fill-dart"></div></div>
+        </div>
+        <div class="weapon-bar" id="bar-smoke" style="display:none;">
+          <div class="weapon-bar-label">💨 Smoke Bomb</div>
+          <div class="weapon-bar-track"><div class="weapon-bar-fill" id="fill-smoke"></div></div>
+        </div>
+        <div class="weapon-bar" id="bar-trap" style="display:none;">
+          <div class="weapon-bar-label">💥 Shadow Trap</div>
+          <div class="weapon-bar-track"><div class="weapon-bar-fill" id="fill-trap"></div></div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="hud" aria-live="polite">
@@ -200,6 +324,18 @@
       <p class="text">🎯 Click to throw shurikens at enemies</p>
       <p class="text" id="enemyLine">👾 Defeat enemies to gain XP and coins</p>
       <p class="text">📚 Answer quiz questions for upgrades</p>
+      <div style="margin-top: 15px; margin-bottom: 10px; background: rgba(0,0,0,0.25); border: 2px solid #6a0572; border-radius: 8px; padding: 10px 14px;">
+        <p class="text" style="margin: 4px 0; color: #d4af37;">🪙 Total Coins: <span id="homeTotalCoins">0</span></p>
+        <p class="text" style="margin: 4px 0;">💀 Total Kills: <span id="homeTotalKills">0</span></p>
+        <p class="text" style="margin: 4px 0; font-size: 14px;">🥷 Shuriken: <span id="homeKillsShuriken">0</span> &nbsp; 🏹 Dart: <span id="homeKillsDart">0</span> &nbsp; 💨 Smoke: <span id="homeKillsSmoke">0</span> &nbsp; 💥 Trap: <span id="homeKillsTrap">0</span></p>
+      </div>
+      <div id="charSelectHome" style="display:none; margin-top: 10px; margin-bottom: 10px;">
+        <p class="text2" style="font-size: 18px; text-align: center; color: #ffd700;">Choose Your Character</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn" id="charBtnNinjaHome" style="font-size:16px; padding:10px 16px;">🥷 Ninja</button>
+          <button class="btn" id="charBtnSamuraiHome" style="font-size:16px; padding:10px 16px;">⚔️ Samurai</button>
+        </div>
+      </div>
       <div style="margin-top: 25px; margin-bottom: 15px;">
       <p class="text2" style="font-size: 25px; text-align: center;">Enter Question Bank Code</p> 
       <input id="bankCode" style="font-size: 25px;" type="text" placeholder="Enter code">
@@ -208,6 +344,8 @@
     </div>
   </div>
   </div>
+
+  <div id="unlockToast"></div>
 
   <div id="quizOverlay" class="overlay" role="dialog" aria-modal="true">
     <div class="box">
@@ -343,6 +481,14 @@
         </div>
       </div>
 
+      <div id="charSelectGuide" style="display:none; margin-top: 20px;">
+        <p class="text2" style="font-size: 18px; text-align: center; color: #ffd700;">Choose Your Character</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <button class="btn" id="charBtnNinjaGuide" style="font-size:16px; padding:10px 16px;">🥷 Ninja</button>
+          <button class="btn" id="charBtnSamuraiGuide" style="font-size:16px; padding:10px 16px;">⚔️ Samurai</button>
+        </div>
+      </div>
+
       <button class="btn" id="startGameBtn" style="margin-top: 20px;">Begin Adventure!</button>
     </div>
   </div>
@@ -383,14 +529,24 @@
 
     // Game state
     let game = { active: false, paused: false, time: 0, frame: 0 };
-    let player = { x: 400, y: 300, hp: 100, maxHp: 100, level: 1, exp: 0, kills: 0 };
+    let player = { x: 400, y: 300, hp: 100, maxHp: 100, level: 1, exp: 0, kills: 0, character: 'ninja' };
+    const NINJA_WEAPON_KEYS = ['shuriken', 'dart', 'smoke', 'trap'];
+    const SAMURAI_WEAPON_KEYS = ['katana', 'naginata', 'bow', 'servant'];
+    const ALL_WEAPON_KEYS = [...NINJA_WEAPON_KEYS, ...SAMURAI_WEAPON_KEYS];
+
     let progress = {
       totalCoins: 0, runCoins: 0, runNumber: 1, deaths: 0, powerupStart: 0,
+      questionsCorrect: 0, selectedPowerups: [],
+      playedCodes: [], samuraiUnlocked: false, selectedCharacter: 'ninja',
       weapons: {
         shuriken: { unlocked: true, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
         dart:     { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
         smoke:    { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
-        trap:     { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 }
+        trap:     { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        katana:   { unlocked: true, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        naginata: { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        bow:      { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
+        servant:  { unlocked: false, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 }
       }
     };
     const SAVE_KEY = 'ninjaShurikenGameProgress';
@@ -398,14 +554,14 @@
     // Levels/paths always reset fresh so a student can freely try a different pathway.
     function saveProgress() {
       try {
+        const weaponKills = {};
+        for (const key of ALL_WEAPON_KEYS) weaponKills[key] = progress.weapons[key].kills;
         const slim = {
           totalCoins: progress.totalCoins,
-          weaponKills: {
-            shuriken: progress.weapons.shuriken.kills,
-            dart: progress.weapons.dart.kills,
-            smoke: progress.weapons.smoke.kills,
-            trap: progress.weapons.trap.kills
-          }
+          questionsCorrect: progress.questionsCorrect,
+          playedCodes: progress.playedCodes,
+          samuraiUnlocked: progress.samuraiUnlocked,
+          weaponKills
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(slim));
       } catch (e) {
@@ -418,8 +574,11 @@
         if (!raw) return;
         const saved = JSON.parse(raw);
         if (typeof saved.totalCoins === 'number') progress.totalCoins = saved.totalCoins;
+        if (typeof saved.questionsCorrect === 'number') progress.questionsCorrect = saved.questionsCorrect;
+        if (Array.isArray(saved.playedCodes)) progress.playedCodes = saved.playedCodes;
+        if (saved.samuraiUnlocked) progress.samuraiUnlocked = true;
         if (saved.weaponKills) {
-          for (const key of ['shuriken', 'dart', 'smoke', 'trap']) {
+          for (const key of ALL_WEAPON_KEYS) {
             const k = saved.weaponKills[key];
             if (typeof k === 'number') {
               progress.weapons[key].kills = k;
@@ -434,8 +593,74 @@
 
     const WEAPON_UNLOCK_KILLS = 10;
     loadProgress();
+    updateHomeStats();
 
-    const WEAPON_NAMES = { shuriken: '🥷 Shurikens', dart: '🏹 Darts', smoke: '💨 Smoke Bomb', trap: '💥 Shadow Trap' };
+    function renderCharacterSelectors() {
+      const show = progress.samuraiUnlocked;
+      const homeDiv = document.getElementById('charSelectHome');
+      const guideDiv = document.getElementById('charSelectGuide');
+      if (homeDiv) homeDiv.style.display = show ? '' : 'none';
+      if (guideDiv) guideDiv.style.display = show ? '' : 'none';
+      if (!show) return;
+
+      const setSelected = (key) => {
+        progress.selectedCharacter = key;
+        renderCharacterSelectors();
+      };
+
+      for (const suffix of ['Home', 'Guide']) {
+        const ninjaBtn = document.getElementById(`charBtnNinja${suffix}`);
+        const samuraiBtn = document.getElementById(`charBtnSamurai${suffix}`);
+        if (!ninjaBtn || !samuraiBtn) continue;
+        ninjaBtn.textContent = (progress.selectedCharacter === 'ninja' ? '✅ ' : '') + '🥷 Ninja';
+        samuraiBtn.textContent = (progress.selectedCharacter === 'samurai' ? '✅ ' : '') + '⚔️ Samurai';
+        ninjaBtn.onclick = () => setSelected('ninja');
+        samuraiBtn.onclick = () => setSelected('samurai');
+      }
+    }
+    renderCharacterSelectors();
+
+    function checkSamuraiUnlock() {
+      if (progress.samuraiUnlocked) return;
+      if (progress.playedCodes.length >= 3 && progress.questionsCorrect >= 100) {
+        progress.samuraiUnlocked = true;
+        saveProgress();
+        triggerSamuraiUnlockEffect();
+        updateHomeStats();
+        renderCharacterSelectors();
+      }
+    }
+
+    function triggerSamuraiUnlockEffect() {
+      const now = Date.now();
+      const cx = (typeof game !== 'undefined' && game.active) ? player.x : 400;
+      const cy = (typeof game !== 'undefined' && game.active) ? player.y : 300;
+      const colors = ['#ffd700', '#ff0055', '#00d4ff', '#ffffff'];
+      for (let i = 0; i < 70; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1;
+        particles.push({ x: cx, y: cy, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, size: Math.random() * 6 + 3, color: colors[Math.floor(Math.random() * colors.length)], start: now, life: 1800 });
+      }
+      particles.push({ x: 400, y: 250, vx: 0, vy: 0, text: '⚔️ A new warrior has awakened...', color: '#ffd700', fontSize: 22, start: now, life: 3500 });
+
+      const toast = document.getElementById('unlockToast');
+      if (toast) {
+        toast.textContent = '⚔️ A new warrior has awakened... The Samurai is now playable!';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 4500);
+      }
+    }
+
+    const WEAPON_NAMES = { shuriken: '🥷 Shurikens', dart: '🏹 Darts', smoke: '💨 Smoke Bomb', trap: '💥 Shadow Trap', katana: '⚔️ Katana', naginata: '🗡️ Naginata', bow: '🏹 Bow', servant: '👺 Summoned Servant' };
+
+    const SINGLE_USE_POWERUPS = {
+      killValue: { name: '💰 Bounty Hunter', desc: "Each kill counts extra toward your weapon mastery this run.", unlockAt: 20 },
+      highLevel: { name: '🚀 Head Start', desc: "Begin the run already leveled up.", unlockAt: 40 },
+      randomRewards: { name: '🎁 Lucky Start', desc: "Begin the run with a handful of free powerups already active.", unlockAt: 60 },
+      coinsPerKill: { name: '🪙 Treasure Hunter', desc: "Earn bonus coin with every kill this run.", unlockAt: 80 }
+    };
+    // Run-scoped values set by single-use powerups; reset every run in reset().
+    let runPowerupEffects = { killValueMult: 1, coinBonusPerKill: 0 };
 
     const ENEMY_DISPLAY_NAMES = {
       slime: 'Slime', bat: 'Bat', ghost: 'Ghost', eye: 'Eye', archer: 'Skeleton Archer',
@@ -492,7 +717,11 @@
       const w = progress.weapons[key];
       return w.path ? Math.max(0, w.level - 4) : 0;
     }
-    let upgrades = { projSpeed: 5, damage: 1, cooldown: 900, smokeUnlocked: false, smokeDamage: 1, smokeCooldown: 4000, shadowUnlocked: false, shadowDamage: 2, shadowRadius: 100, shadowCooldown: 10000, dartUnlocked: false, dartAmount: 2, dartRange: 120, dartCooldown: 3000 };
+    let upgrades = { projSpeed: 5, damage: 1, cooldown: 900, smokeUnlocked: false, smokeDamage: 1, smokeCooldown: 4000, shadowUnlocked: false, shadowDamage: 2, shadowRadius: 100, shadowCooldown: 10000, dartUnlocked: false, dartAmount: 2, dartRange: 120, dartCooldown: 3000,
+      katanaCooldown: 900, katanaDamage: 3, katanaRange: 70, katanaArc: 70,
+      naginataUnlocked: false, naginataCooldown: 1600, naginataDamage: 3, naginataRange: 160, naginataSpeed: 3,
+      bowUnlocked: false, bowCooldown: 1300, bowDamage: 2, bowSpeed: 4.5,
+      servantUnlocked: false, servantCooldown: 8000, servantDamage: 1, servantLifetime: 15000 };
 
     // Entities and IDs
     let nextEnemyId = 1;
@@ -507,6 +736,30 @@
     let smokeClouds = [];
     let poisonPools = [];
     let shurikenMag = { current: 2, capacity: 2, lastRegen: 0 };
+
+    // Samurai weapon entities
+    let katanaSlashFX = [];
+    let shockwaves = [];
+    let naginataSpears = [];
+    let bowArrows = [];
+    let arrowRainMarkers = [];
+    let samuraiServants = [];
+    let lastKatana = 0;
+    let lastNaginata = 0;
+    let lastBow = 0;
+    let lastServant = 0;
+    let servantReady = true;
+    let honor = 0; // Bushido passive
+
+    // Boss / void variant state
+    let healingOrbs = [];
+    let trollFireballs = [];
+    let ectoplasmMarkers = [];
+    let voidLasers = [];
+    let bossMilestonesSpawned = new Set();
+    let activeBossId = null;
+    let totalUpgradesPurchased = 0;
+    function getVoidChance() { return Math.min(1, totalUpgradesPurchased * 0.01); }
 
     // Safety caps
     const MAX_BULLETS = 60;
@@ -536,6 +789,7 @@ const QUESTION_BANK_FILES={
 '93bf':'question-banks/year-9-biology-full.json',
 '92ps':'question-banks/year-9-physics-speed.json',
 '92pf':'question-banks/year-9-physics-force.json',
+'test':'question-banks/devtestquestions.json',
 
 }
     // Helper functions
@@ -628,7 +882,44 @@ const QUESTION_BANK_FILES={
       for (let i = 0; i < 600; i += 40) { ctx.fillRect(5, i, 20, 38); ctx.fillRect(775, i + 20, 20, 38); }
     }
 
+    function shadeColor(hex, percent) {
+      if (!hex || hex[0] !== '#' || hex.length !== 7) return hex;
+      const num = parseInt(hex.slice(1), 16);
+      let r = (num >> 16) + Math.round(2.55 * percent);
+      let g = ((num >> 8) & 0x00FF) + Math.round(2.55 * percent);
+      let b = (num & 0x0000FF) + Math.round(2.55 * percent);
+      r = Math.max(0, Math.min(255, r));
+      g = Math.max(0, Math.min(255, g));
+      b = Math.max(0, Math.min(255, b));
+      return '#' + (0x1000000 + r * 0x10000 + g * 0x100 + b).toString(16).slice(1);
+    }
+
+    // Draws a rectangle with a subtle top-to-bottom gradient + a dark outline for a more
+    // rendered, less flat-pixel look.
+    function shadedRect(x, y, w, h, color, lineWidth) {
+      const grad = ctx.createLinearGradient(x, y, x, y + h);
+      grad.addColorStop(0, shadeColor(color, 22));
+      grad.addColorStop(0.55, color);
+      grad.addColorStop(1, shadeColor(color, -22));
+      ctx.fillStyle = grad;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeStyle = shadeColor(color, -45);
+      ctx.lineWidth = lineWidth || 1;
+      ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
+    }
+
+    // Small glint/highlight for extra dimensionality on rounded or shiny surfaces.
+    function drawGlint(x, y, w, h) {
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.fillRect(x, y, w, h);
+    }
+
     function drawPlayer() {
+      if (player.character === 'samurai') drawPlayerSamurai();
+      else drawPlayerNinja();
+    }
+
+    function drawPlayerNinja() {
       const breathe = Math.sin(game.frame * 0.03) * 1.5;
       const armSwing = Math.sin(game.frame * 0.05) * 4;
       const headBob = Math.sin(game.frame * 0.04) * 0.8;
@@ -637,41 +928,39 @@ const QUESTION_BANK_FILES={
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(player.x - 22, player.y + 15, 44, 8);
 
-      ctx.fillStyle = '#8b0000';
-      ctx.fillRect(player.x - 20 + capeFlow, player.y - 20 + breathe, 40, 38);
-      ctx.fillStyle = '#6a0000';
-      ctx.fillRect(player.x - 18 + capeFlow, player.y - 18 + breathe, 36, 34);
+      shadedRect(player.x - 20 + capeFlow, player.y - 20 + breathe, 40, 38, '#8b0000');
+      shadedRect(player.x - 18 + capeFlow, player.y - 18 + breathe, 36, 34, '#6a0000');
 
-      ctx.fillStyle = '#0a0a0a';
-      ctx.fillRect(player.x - 18, player.y - 17 + breathe, 36, 34);
+      shadedRect(player.x - 18, player.y - 17 + breathe, 36, 34, '#0a0a0a');
+      drawGlint(player.x - 15, player.y - 15 + breathe, 6, 10);
 
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(player.x - 14, player.y - 15 + breathe, 28, 8);
       ctx.fillRect(player.x - 14, player.y - 5 + breathe, 28, 8);
 
-      ctx.fillStyle = '#c0392b';
-      ctx.fillRect(player.x - 20, player.y - 3 + breathe, 40, 7);
+      shadedRect(player.x - 20, player.y - 3 + breathe, 40, 7, '#c0392b');
       ctx.fillStyle = '#e74c3c';
       ctx.fillRect(player.x - 20, player.y - 2 + breathe, 40, 3);
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(player.x - 3, player.y - 3 + breathe, 6, 7);
+      ctx.strokeStyle = '#7a6010';
+      ctx.strokeRect(player.x - 3 + 0.5, player.y - 3 + breathe + 0.5, 5, 6);
 
-      ctx.fillStyle = '#1a1a1a';
-      ctx.fillRect(player.x - 24, player.y - 8 + breathe + armSwing, 10, 16);
-      ctx.fillRect(player.x + 14, player.y - 8 + breathe - armSwing, 10, 16);
+      shadedRect(player.x - 24, player.y - 8 + breathe + armSwing, 10, 16, '#1a1a1a');
+      shadedRect(player.x + 14, player.y - 8 + breathe - armSwing, 10, 16, '#1a1a1a');
 
       ctx.fillStyle = '#2c2c2c';
       ctx.fillRect(player.x - 23, player.y - 6 + breathe + armSwing, 8, 4);
       ctx.fillRect(player.x + 15, player.y - 6 + breathe - armSwing, 8, 4);
 
-      ctx.fillStyle = '#d4a574';
-      ctx.fillRect(player.x - 24, player.y + 7 + breathe + armSwing, 8, 7);
-      ctx.fillRect(player.x + 16, player.y + 7 + breathe - armSwing, 8, 7);
+      shadedRect(player.x - 24, player.y + 7 + breathe + armSwing, 8, 7, '#d4a574');
+      shadedRect(player.x + 16, player.y + 7 + breathe - armSwing, 8, 7, '#d4a574');
 
       ctx.fillStyle = '#0a0a0a';
       ctx.fillRect(player.x - 12, player.y + 15, 10, 6);
       ctx.fillRect(player.x + 2, player.y + 15, 10, 6);
 
-      ctx.fillStyle = '#0a0a0a';
-      ctx.fillRect(player.x - 16, player.y - 26 + breathe + headBob, 32, 20);
+      shadedRect(player.x - 16, player.y - 26 + breathe + headBob, 32, 20, '#0a0a0a');
 
       ctx.fillStyle = '#1a1a1a';
       ctx.fillRect(player.x - 16, player.y - 26 + breathe + headBob, 32, 6);
@@ -691,13 +980,12 @@ const QUESTION_BANK_FILES={
       ctx.fillRect(player.x - 8, player.y - 17 + breathe + headBob, 2, 3);
       ctx.fillRect(player.x + 6, player.y - 17 + breathe + headBob, 2, 3);
 
-      ctx.fillStyle = '#2c3e50';
-      ctx.fillRect(player.x - 15, player.y - 21 + breathe + headBob, 30, 4);
+      shadedRect(player.x - 15, player.y - 21 + breathe + headBob, 30, 4, '#2c3e50');
       ctx.fillStyle = '#34495e';
       ctx.fillRect(player.x - 2, player.y - 21 + breathe + headBob, 4, 4);
 
       // Storm of Steel: magazine pips + orbiting shurikens
-      if (pathLevel('shuriken', 'B') >= 3) {
+      if (player.character === 'ninja' && pathLevel('shuriken', 'B') >= 3) {
         const pipSpacing = 12;
         const startX = player.x - ((shurikenMag.capacity - 1) * pipSpacing) / 2;
         for (let p = 0; p < shurikenMag.capacity; p++) {
@@ -722,6 +1010,125 @@ const QUESTION_BANK_FILES={
       }
     }
 
+    function drawPlayerSamurai() {
+      const breathe = Math.sin(game.frame * 0.03) * 1.5;
+      const armSwing = Math.sin(game.frame * 0.05) * 3;
+      const headBob = Math.sin(game.frame * 0.04) * 0.8;
+      const honorPct = Math.min(1, honor / 10);
+      const y = player.y + breathe;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(player.x - 22, player.y + 15, 44, 8);
+
+      // Honor glow (Bushido) — brighter and wider the more honor is banked
+      if (honorPct > 0) {
+        ctx.globalAlpha = 0.28 * honorPct;
+        const glowGrad = ctx.createRadialGradient(player.x, y - 5, 4, player.x, y - 5, 38);
+        glowGrad.addColorStop(0, '#fff3b0');
+        glowGrad.addColorStop(1, 'rgba(255,215,0,0)');
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(player.x, y - 5, 38, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      // Kusazuri — flared lamellar skirt plates below the torso
+      for (let p = -1; p <= 1; p++) {
+        shadedRect(player.x + p * 13 - 7, y + 8, 14, 10, '#151a30');
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(player.x + p * 13 - 7, y + 8, 14, 2);
+      }
+
+      // Legs / greaves
+      ctx.fillStyle = '#0a0a0a';
+      ctx.fillRect(player.x - 12, player.y + 15, 10, 6);
+      ctx.fillRect(player.x + 2, player.y + 15, 10, 6);
+
+      // Sode (shoulder armor) behind the arms
+      shadedRect(player.x - 27, y - 12 + armSwing * 0.3, 9, 11, '#0d1226');
+      shadedRect(player.x + 18, y - 12 - armSwing * 0.3, 9, 11, '#0d1226');
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(player.x - 27, y - 12 + armSwing * 0.3, 9, 2);
+      ctx.fillRect(player.x + 18, y - 12 - armSwing * 0.3, 9, 2);
+
+      // Arms (kote sleeves) + gauntlet hands
+      shadedRect(player.x - 24, y - 8 + armSwing, 10, 16, '#1a2744');
+      shadedRect(player.x + 14, y - 8 - armSwing, 10, 16, '#1a2744');
+      shadedRect(player.x - 24, player.y + 7 + breathe + armSwing, 8, 7, '#3a3f52');
+      shadedRect(player.x + 16, player.y + 7 + breathe - armSwing, 8, 7, '#3a3f52');
+
+      // Torso (do-maru) — dark lacquered plate with kozane lacing lines
+      shadedRect(player.x - 18, y - 17, 36, 30, '#182449');
+      for (let li = 0; li < 4; li++) {
+        ctx.fillStyle = li % 2 === 0 ? '#8b0000' : '#0d1226';
+        ctx.fillRect(player.x - 17, y - 13 + li * 6, 34, 2);
+      }
+      drawGlint(player.x - 14, y - 15, 6, 9);
+
+      // Obi sash, diagonal
+      ctx.save();
+      ctx.translate(player.x, y);
+      ctx.rotate(-0.35);
+      ctx.fillStyle = '#b8860b';
+      ctx.fillRect(-20, -3, 42, 6);
+      ctx.restore();
+
+      // Chest crest (mon)
+      ctx.fillStyle = '#d4af37';
+      ctx.beginPath();
+      ctx.arc(player.x, y - 4, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#8b0000';
+      ctx.beginPath();
+      ctx.arc(player.x, y - 4, 2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Sheathed katana at the hip, angled across the back
+      ctx.save();
+      ctx.translate(player.x + 6, y + 2);
+      ctx.rotate(-0.55);
+      ctx.fillStyle = '#2a1e14';
+      ctx.fillRect(-4, -24, 6, 32);
+      ctx.fillStyle = '#8b0000';
+      ctx.fillRect(-5, 4, 8, 3);
+      ctx.fillStyle = '#d4af37';
+      ctx.beginPath();
+      ctx.arc(0, 8, 5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#3a2a1a';
+      ctx.fillRect(-2, 8, 4, 9);
+      ctx.restore();
+
+      // Kabuto helmet with flared neck guard (shikoro)
+      const hx = player.x, hy = y - 26 + headBob;
+      shadedRect(hx - 17, hy + 6, 34, 8, '#0d1226');
+      shadedRect(hx - 16, hy, 32, 14, '#182449');
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(hx - 16, hy, 32, 3);
+      ctx.fillRect(hx - 16, hy, 3, 14);
+      ctx.fillRect(hx + 13, hy, 3, 14);
+
+      // Crescent-moon maedate (helmet crest)
+      ctx.fillStyle = '#ffd700';
+      ctx.beginPath();
+      ctx.arc(hx, hy - 6, 8, Math.PI * 0.15, Math.PI * 0.85, false);
+      ctx.arc(hx, hy - 4, 6, Math.PI * 0.85, Math.PI * 0.15, true);
+      ctx.closePath();
+      ctx.fill();
+
+      // Menpo (fierce face mask) with glowing eye slits
+      ctx.fillStyle = '#7a1010';
+      ctx.fillRect(hx - 10, hy + 6, 20, 10);
+      ctx.fillStyle = '#2a0505';
+      ctx.fillRect(hx - 8, hy + 14, 16, 3);
+      ctx.fillStyle = '#ffe082';
+      ctx.fillRect(hx - 7, hy + 9, 5, 3);
+      ctx.fillRect(hx + 2, hy + 9, 5, 3);
+      ctx.fillStyle = '#3a0a0a';
+      ctx.fillRect(hx - 3, hy + 13, 6, 2);
+    }
+
     function drawEnemy(e) {
       if (e.smokeBuffed) {
         const pulse = Math.sin(game.frame * 0.1) * 0.3 + 0.7;
@@ -732,7 +1139,21 @@ const QUESTION_BANK_FILES={
         ctx.fill();
         ctx.globalAlpha = 1;
       }
-      
+
+      ctx.save();
+      if (e.isBoss || e.isVoid) {
+        let saturatePct = 100;
+        if (e.isBoss) saturatePct *= 1.5;
+        if (e.isVoid) saturatePct *= 0.75;
+        const hueShift = e.isVoid ? 260 : 0;
+        ctx.filter = `saturate(${saturatePct}%) hue-rotate(${hueShift}deg) ${e.isVoid ? 'brightness(0.85)' : ''}`;
+      }
+      if (e.isBoss) {
+        ctx.translate(e.x, e.y);
+        ctx.scale(1.4, 1.4);
+        ctx.translate(-e.x, -e.y);
+      }
+
       if (e.type === 'bat') drawBat(e);
       else if (e.type === 'ghost') drawGhost(e);
       else if (e.type === 'eye') drawEye(e);
@@ -743,6 +1164,16 @@ const QUESTION_BANK_FILES={
       else if (e.type === 'fire_golem') drawFireGolem(e);
       else if (e.type === 'troll') drawTroll(e);
       else drawSlime(e);
+
+      ctx.restore();
+
+      if (e.isBoss) {
+        ctx.fillStyle = e.isVoid ? '#b266ff' : '#ff0055';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(e.isVoid ? '☠ VOID BOSS ☠' : '☠ BOSS ☠', e.x, e.y - 60);
+        ctx.textAlign = 'left';
+      }
 
       const now = Date.now();
       if (e.stunnedUntil && now < e.stunnedUntil) {
@@ -761,6 +1192,11 @@ const QUESTION_BANK_FILES={
         ctx.beginPath();
         ctx.arc(e.x - 14, e.y - 40, 3, 0, Math.PI * 2);
         ctx.fill();
+      }
+      if (e.marked) {
+        ctx.fillStyle = '#2196f3';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.fillText('!', e.x - 3, e.y - 48);
       }
     }
 
@@ -782,20 +1218,20 @@ const QUESTION_BANK_FILES={
       const bodyWidth = 44 * squish;
       const bodyHeight = 10 / squish;
       
-      const darkColor = e.metal ? '#6b7280' : '#27ae60';
-      const mainColor = e.metal ? '#9ca3af' : '#2ecc71';
-      const lightColor = e.metal ? '#d1d5db' : '#34eb77';
+      const darkColor = e.isGhostSlime ? '#9ca3af' : (e.metal ? '#6b7280' : '#27ae60');
+      const mainColor = e.isGhostSlime ? '#f5f5f5' : (e.metal ? '#9ca3af' : '#2ecc71');
+      const lightColor = e.isGhostSlime ? '#ffffff' : (e.metal ? '#d1d5db' : '#34eb77');
       
       ctx.fillStyle = darkColor;
       ctx.fillRect(e.x - bodyWidth/2 + wobble, e.y - 9 - bounce, bodyWidth, bodyHeight);
 
       const mainWidth = 36 * squish;
       const mainHeight = 20 / squish;
-      ctx.fillStyle = mainColor;
-      ctx.fillRect(e.x - mainWidth/2 + wobble, e.y - 16 - bounce, mainWidth, mainHeight);
+      shadedRect(e.x - mainWidth/2 + wobble, e.y - 16 - bounce, mainWidth, mainHeight, mainColor);
 
       ctx.fillStyle = lightColor;
       ctx.fillRect(e.x - mainWidth/2 + 3 + wobble, e.y - 14 - bounce, mainWidth - 6, 3);
+      drawGlint(e.x - mainWidth/2 + 5 + wobble, e.y - 15 - bounce, 5, 5);
 
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(e.x - 8 + wobble, e.y - 10 - bounce, 16, 12);
@@ -855,19 +1291,17 @@ const QUESTION_BANK_FILES={
       ctx.fillRect(e.x + 4, e.y + 2, 12, 14);
 
       // arms (swinging slightly)
-      ctx.fillStyle = skinMain;
-      ctx.fillRect(e.x - 30, e.y - 14 + armSwing, 10, 24);
-      ctx.fillRect(e.x + 20, e.y - 14 - armSwing, 10, 24);
+      shadedRect(e.x - 30, e.y - 14 + armSwing, 10, 24, skinMain);
+      shadedRect(e.x + 20, e.y - 14 - armSwing, 10, 24, skinMain);
 
       // torso
-      ctx.fillStyle = skinMain;
-      ctx.fillRect(e.x - 20, e.y - 22 + lumber * 0.2, 40, 26);
+      shadedRect(e.x - 20, e.y - 22 + lumber * 0.2, 40, 26, skinMain);
       ctx.fillStyle = skinLight;
       ctx.fillRect(e.x - 20, e.y - 22 + lumber * 0.2, 40, 5);
+      drawGlint(e.x - 16, e.y - 20 + lumber * 0.2, 6, 8);
 
       // head
-      ctx.fillStyle = skinDark;
-      ctx.fillRect(e.x - 13, e.y - 40 + lumber * 0.2, 26, 20);
+      shadedRect(e.x - 13, e.y - 40 + lumber * 0.2, 26, 20, skinDark);
 
       // eyes
       const dx = player.x - e.x;
@@ -896,19 +1330,17 @@ const QUESTION_BANK_FILES={
       const earColor = e.metal ? '#6b7280' : '#1a1a1a';
       const wingColor = e.metal ? '#4b5563' : '#0a0a0a';
       
-      ctx.fillStyle = bodyColor;
-      ctx.fillRect(e.x - 8, e.y - 10, 16, 18);
-      ctx.fillStyle = headColor;
-      ctx.fillRect(e.x - 10, e.y - 18, 20, 12);
+      shadedRect(e.x - 8, e.y - 10, 16, 18, bodyColor);
+      shadedRect(e.x - 10, e.y - 18, 20, 12, headColor);
       ctx.fillStyle = earColor;
       ctx.fillRect(e.x - 12, e.y - 20, 6, 8);
       ctx.fillRect(e.x + 6, e.y - 20, 6, 8);
-      ctx.fillStyle = wingColor;
-      ctx.fillRect(e.x - 24, e.y - 5 - flap, 12, 18);
-      ctx.fillRect(e.x + 12, e.y - 5 - flap, 12, 18);
+      shadedRect(e.x - 24, e.y - 5 - flap, 12, 18, wingColor);
+      shadedRect(e.x + 12, e.y - 5 - flap, 12, 18, wingColor);
       ctx.fillStyle = '#ff0000';
       ctx.fillRect(e.x - 6, e.y - 14, 4, 4);
       ctx.fillRect(e.x + 2, e.y - 14, 4, 4);
+      drawGlint(e.x - 8, e.y - 17, 4, 3);
     }
 
     function drawGhost(e) {
@@ -924,12 +1356,13 @@ const QUESTION_BANK_FILES={
 
       const ghostColor = e.metal ? '#9ca3af' : '#e8e8ff';
       
-      ctx.globalAlpha = fade;
+      ctx.globalAlpha = e.phased ? fade * 0.15 : fade;
+      shadedRect(e.x - 16, e.y - 20 + float, 32, 28, ghostColor);
       ctx.fillStyle = ghostColor;
-      ctx.fillRect(e.x - 16, e.y - 20 + float, 32, 28);
       ctx.fillRect(e.x - 16, e.y + 8 + float, 8, 6);
       ctx.fillRect(e.x - 4, e.y + 8 + float, 8, 6);
       ctx.fillRect(e.x + 8, e.y + 8 + float, 8, 6);
+      drawGlint(e.x - 12, e.y - 17 + float, 6, 10);
       ctx.fillStyle = '#000000';
       ctx.fillRect(e.x - 10, e.y - 10 + float, 6, 8);
       ctx.fillRect(e.x + 4, e.y - 10 + float, 6, 8);
@@ -948,16 +1381,15 @@ const QUESTION_BANK_FILES={
 
       ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
       ctx.fillRect(e.x - 18, e.y + 12, 36, 6);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(e.x - 20 - pulse, e.y - 20, 40 + pulse * 2, 36);
+      shadedRect(e.x - 20 - pulse, e.y - 20, 40 + pulse * 2, 36, '#ffffff');
       
       const irisColor = e.metal ? '#6b7280' : '#8b00ff';
-      ctx.fillStyle = irisColor;
-      ctx.fillRect(e.x - 12, e.y - 12, 24, 24);
+      shadedRect(e.x - 12, e.y - 12, 24, 24, irisColor);
       ctx.fillStyle = '#000000';
       ctx.fillRect(e.x - 6, e.y - 6, 12, 12);
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(e.x - 3, e.y - 3, 4, 4);
+      drawGlint(e.x - 16, e.y - 17, 6, 6);
     }
 
     function drawArcher(e) {
@@ -976,8 +1408,8 @@ const QUESTION_BANK_FILES={
 
       const boneColor = e.metal ? '#9ca3af' : '#f8f8f0';
       
+      shadedRect(e.x - 10, e.y - 24 + breathe, 20, 16, boneColor);
       ctx.fillStyle = boneColor;
-      ctx.fillRect(e.x - 10, e.y - 24 + breathe, 20, 16);
       ctx.fillRect(e.x - 8, e.y - 26 + breathe, 16, 2);
 
       ctx.fillStyle = '#000000';
@@ -1006,8 +1438,7 @@ const QUESTION_BANK_FILES={
       ctx.fillStyle = boneColor;
       ctx.fillRect(e.x - 2, e.y - 8 + breathe, 4, 6);
 
-      ctx.fillStyle = boneColor;
-      ctx.fillRect(e.x - 12, e.y - 6 + breathe, 24, 16);
+      shadedRect(e.x - 12, e.y - 6 + breathe, 24, 16, boneColor);
       
       ctx.fillStyle = '#f0f0f0';
       ctx.fillRect(e.x - 10, e.y - 4 + breathe, 20, 1);
@@ -1052,7 +1483,7 @@ const QUESTION_BANK_FILES={
     let lookupCode = code;
     if (code === DEV_CHEAT_CODE) {
         devMode = true;
-        lookupCode = Object.keys(QUESTION_BANK_FILES)[0];
+        lookupCode = 'test';
     }
 
     const file = QUESTION_BANK_FILES[lookupCode];
@@ -1065,17 +1496,27 @@ const QUESTION_BANK_FILES={
 
     questions = await response.json();
 
+    if (!devMode && !progress.playedCodes.includes(code)) {
+      progress.playedCodes.push(code);
+      saveProgress();
+      checkSamuraiUnlock();
+    }
+
     if (devMode) {
-        // Dev/testing shortcut: 1000 bonus coin + every weapon unlocked to start with
-        // (still at level 0 — buy shop upgrades normally to test specific abilities).
-        progress.totalCoins += 1000;
-        progress.weapons.dart.unlocked = true;
-        progress.weapons.dart.kills = Math.max(progress.weapons.dart.kills, WEAPON_UNLOCK_KILLS);
-        progress.weapons.smoke.unlocked = true;
-        progress.weapons.smoke.kills = Math.max(progress.weapons.smoke.kills, WEAPON_UNLOCK_KILLS);
-        progress.weapons.trap.unlocked = true;
-        progress.weapons.trap.kills = Math.max(progress.weapons.trap.kills, WEAPON_UNLOCK_KILLS);
+        // Dev/testing shortcut: huge coin + kill stockpile so every weapon and every shop
+        // upgrade (any level, any path) is freely buyable to test specific builds.
+        progress.totalCoins = 999999;
+        for (const key of ALL_WEAPON_KEYS) {
+          progress.weapons[key].unlocked = true;
+          progress.weapons[key].kills = 999999;
+        }
+        if (!progress.samuraiUnlocked) {
+          progress.samuraiUnlocked = true;
+          triggerSamuraiUnlockEffect();
+        }
         saveProgress();
+        updateHomeStats();
+        renderCharacterSelectors();
     }
 
     return true;
@@ -1087,11 +1528,11 @@ const QUESTION_BANK_FILES={
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
 
-      ctx.fillStyle = '#5d4e37';
-      ctx.fillRect(e.x - 20 + rumble, e.y - 20 + breathe, 40, 38);
+      shadedRect(e.x - 20 + rumble, e.y - 20 + breathe, 40, 38, '#5d4e37');
 
       ctx.fillStyle = '#7d6e47';
       ctx.fillRect(e.x - 18 + rumble, e.y - 18 + breathe, 36, 34);
+      drawGlint(e.x - 14 + rumble, e.y - 16 + breathe, 8, 12);
 
       ctx.fillStyle = '#4d3e27';
       ctx.fillRect(e.x - 15 + rumble, e.y + 18 + breathe, 8, 6);
@@ -1115,9 +1556,8 @@ const QUESTION_BANK_FILES={
       ctx.fillRect(e.x - 8 + rumble, e.y - 10 + breathe, 2, 4);
       ctx.fillRect(e.x + 6 + rumble, e.y - 10 + breathe, 2, 4);
 
-      ctx.fillStyle = '#5d4e37';
-      ctx.fillRect(e.x - 28 + rumble, e.y - 8 + breathe, 8, 18);
-      ctx.fillRect(e.x + 20 + rumble, e.y - 8 + breathe, 8, 18);
+      shadedRect(e.x - 28 + rumble, e.y - 8 + breathe, 8, 18, '#5d4e37');
+      shadedRect(e.x + 20 + rumble, e.y - 8 + breathe, 8, 18, '#5d4e37');
 
       ctx.fillStyle = '#4d3e27';
       ctx.fillRect(e.x - 30 + rumble, e.y + 10 + breathe, 10, 8);
@@ -1135,11 +1575,11 @@ const QUESTION_BANK_FILES={
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24, e.y + 18, 48, 8);
 
-      ctx.fillStyle = '#3e2723';
-      ctx.fillRect(e.x - 18 + sway, e.y - 18 + breathe, 36, 36);
+      shadedRect(e.x - 18 + sway, e.y - 18 + breathe, 36, 36, '#3e2723');
 
       ctx.fillStyle = '#5d4037';
       ctx.fillRect(e.x - 16 + sway, e.y - 16 + breathe, 32, 32);
+      drawGlint(e.x - 12 + sway, e.y - 14 + breathe, 7, 11);
 
       ctx.fillStyle = '#4e342e';
       ctx.fillRect(e.x - 8 + sway, e.y - 10 + breathe, 16, 3);
@@ -1154,9 +1594,8 @@ const QUESTION_BANK_FILES={
       ctx.fillRect(e.x - 10 + sway, e.y - 12 + breathe, 6, 8);
       ctx.fillRect(e.x + 4 + sway, e.y - 12 + breathe, 6, 8);
 
-      ctx.fillStyle = '#3e2723';
-      ctx.fillRect(e.x - 26 + sway, e.y - 8 + breathe, 8, 16);
-      ctx.fillRect(e.x + 18 + sway, e.y - 8 + breathe, 8, 16);
+      shadedRect(e.x - 26 + sway, e.y - 8 + breathe, 8, 16, '#3e2723');
+      shadedRect(e.x + 18 + sway, e.y - 8 + breathe, 8, 16, '#3e2723');
 
       ctx.fillStyle = '#4caf50';
       ctx.fillRect(e.x - 30 + sway, e.y - 6 + breathe, 8, 8);
@@ -1177,11 +1616,11 @@ const QUESTION_BANK_FILES={
       const alpha = 0.7 + Math.sin(e.anim * 0.05) * 0.2;
       ctx.globalAlpha = alpha;
 
-      ctx.fillStyle = '#616161';
-      ctx.fillRect(e.x - 20, e.y - 20 + breathe + float, 40, 38);
+      shadedRect(e.x - 20, e.y - 20 + breathe + float, 40, 38, '#616161');
 
       ctx.fillStyle = '#9e9e9e';
       ctx.fillRect(e.x - 18, e.y - 18 + breathe + float, 36, 34);
+      drawGlint(e.x - 14, e.y - 15 + breathe + float, 8, 12);
 
       ctx.fillStyle = '#757575';
       ctx.fillRect(e.x - 22, e.y - 15 + breathe + float, 8, 20);
@@ -1213,14 +1652,14 @@ const QUESTION_BANK_FILES={
       ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
       ctx.fillRect(e.x - 24 * scale, e.y + 18 * scale, 48 * scale, 8 * scale);
 
-      ctx.fillStyle = '#b71c1c';
-      ctx.fillRect(e.x - width/2 + flicker, e.y - height/2 + breathe, width, height);
+      shadedRect(e.x - width/2 + flicker, e.y - height/2 + breathe, width, height, '#b71c1c');
 
       ctx.fillStyle = '#d32f2f';
       ctx.fillRect(e.x - width/2 + 2 * scale + flicker, e.y - height/2 + 2 * scale + breathe, width - 4 * scale, height - 4 * scale);
 
       ctx.fillStyle = '#f44336';
       ctx.fillRect(e.x - width/2 + 4 * scale + flicker, e.y - height/2 + 4 * scale + breathe, width - 8 * scale, height - 8 * scale);
+      drawGlint(e.x - width/2 + 6 * scale + flicker, e.y - height/2 + 6 * scale + breathe, 6 * scale, 8 * scale);
 
       ctx.fillStyle = '#ff9800';
       ctx.fillRect(e.x - 8 * scale + flicker, e.y - height/2 - 4 * scale + breathe, 4 * scale, 6 * scale);
@@ -1240,7 +1679,11 @@ const QUESTION_BANK_FILES={
       ctx.save();
       ctx.translate(b.x, b.y);
       ctx.rotate(b.rot);
-      ctx.fillStyle = '#c0c0c0';
+      const grad = ctx.createLinearGradient(-12, -12, 12, 12);
+      grad.addColorStop(0, '#e8e8e8');
+      grad.addColorStop(0.5, '#c0c0c0');
+      grad.addColorStop(1, '#888888');
+      ctx.fillStyle = grad;
       ctx.beginPath();
       ctx.moveTo(0, -12);
       ctx.lineTo(3, -4);
@@ -1252,6 +1695,9 @@ const QUESTION_BANK_FILES={
       ctx.lineTo(-3, -4);
       ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = '#4a4a4a';
+      ctx.lineWidth = 1;
+      ctx.stroke();
       ctx.fillStyle = '#ffffff';
       ctx.beginPath();
       ctx.arc(0, 0, 3, 0, Math.PI * 2);
@@ -1284,21 +1730,25 @@ const QUESTION_BANK_FILES={
 
       ctx.fillStyle = '#2d0a30';
       ctx.beginPath(); ctx.arc(trap.x, trap.y, 37.5, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#1a0620';
+      ctx.lineWidth = 1;
+      ctx.stroke();
 
       ctx.fillStyle = '#4a0e4e';
       ctx.beginPath(); ctx.arc(trap.x, trap.y, 27, 0, Math.PI * 2); ctx.fill();
 
-      ctx.fillStyle = '#8b00ff';
+      const coreGrad = ctx.createRadialGradient(trap.x - 3, trap.y - 3, 1, trap.x, trap.y, 12);
+      coreGrad.addColorStop(0, '#d199ff');
+      coreGrad.addColorStop(1, '#8b00ff');
+      ctx.fillStyle = coreGrad;
       ctx.beginPath(); ctx.arc(trap.x, trap.y, 12, 0, Math.PI * 2); ctx.fill();
 
       ctx.globalAlpha = 1;
     }
 
     function drawDart(d) {
-      ctx.fillStyle = '#8b4513';
-      ctx.fillRect(d.x - 8, d.y - 2, 16, 4);
-      ctx.fillStyle = '#c0c0c0';
-      ctx.fillRect(d.x + 6, d.y - 3, 6, 6);
+      shadedRect(d.x - 8, d.y - 2, 16, 4, '#8b4513');
+      shadedRect(d.x + 6, d.y - 3, 6, 6, '#c0c0c0');
     }
 
     function drawParticle(p) {
@@ -1366,23 +1816,36 @@ const QUESTION_BANK_FILES={
       return message;
     }
 
-    function spawnSpecificEnemy(type, x, y, speedMultiplier, baseHp, isMetal) {
+    function spawnSpecificEnemy(type, x, y, speedMultiplier, baseHp, isMetal, forceVoid) {
       const id = nextEnemyId++;
+      const isVoid = forceVoid !== undefined ? forceVoid : Math.random() < getVoidChance();
+      const voidMult = isVoid ? 2 : 1;
+
       if (type === 'bat') {
-        enemies.push({ id, type: 'bat', x, y, speed: 0.8 * speedMultiplier, hp: 1, maxHp: 1, anim: Math.random() * 100, metal: isMetal });
+        const hp = 1 * voidMult;
+        enemies.push({ id, type: 'bat', x, y, speed: 0.8 * speedMultiplier, hp, maxHp: hp, anim: Math.random() * 100, metal: isMetal, isVoid });
       } else if (type === 'ghost') {
-        enemies.push({ id, type: 'ghost', x, y, speed: 0.2 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, sineOffset: 0, metal: isMetal });
-      } else if (type === 'eye') {
-        const eyeHp = baseHp * 2;
-        enemies.push({ id, type: 'eye', x, y, speed: 0.2 * speedMultiplier, hp: eyeHp, maxHp: eyeHp, anim: Math.random() * 100, lastWarp: Date.now(), metal: isMetal });
-      } else if (type === 'archer') {
-        enemies.push({ id, type: 'archer', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, lastShot: 0, metal: isMetal });
-      } else if (type === 'troll') {
-        const trollHp = baseHp * 2;
+        const hp = baseHp * voidMult;
         const now = Date.now();
-        enemies.push({ id, type: 'troll', x, y, speed: 0.12 * speedMultiplier, hp: trollHp, maxHp: trollHp, anim: Math.random() * 100, metal: isMetal, lastHit: now, lastRegen: now });
+        enemies.push({ id, type: 'ghost', x, y, speed: 0.2 * speedMultiplier, hp, maxHp: hp, anim: Math.random() * 100, sineOffset: 0, metal: isMetal, isVoid, phased: false, lastPhase: now });
+      } else if (type === 'eye') {
+        const hp = baseHp * 2 * voidMult;
+        enemies.push({ id, type: 'eye', x, y, speed: 0.2 * speedMultiplier, hp, maxHp: hp, anim: Math.random() * 100, lastWarp: Date.now(), metal: isMetal, isVoid, lastLaser: Date.now() });
+      } else if (type === 'archer') {
+        const hp = baseHp * voidMult;
+        enemies.push({ id, type: 'archer', x, y, speed: 0.5 * speedMultiplier, hp, maxHp: hp, anim: Math.random() * 100, lastShot: 0, metal: isMetal, isVoid, circleAngle: Math.random() * Math.PI * 2 });
+      } else if (type === 'troll') {
+        const hp = baseHp * 2 * voidMult;
+        const now = Date.now();
+        enemies.push({ id, type: 'troll', x, y, speed: 0.12 * speedMultiplier, hp, maxHp: hp, anim: Math.random() * 100, metal: isMetal, isVoid, lastHit: now, lastRegen: now });
       } else {
-        enemies.push({ id, type: 'slime', x, y, speed: 0.5 * speedMultiplier, hp: baseHp, maxHp: baseHp, anim: Math.random() * 100, metal: isMetal });
+        const hp = baseHp * voidMult;
+        enemies.push({ id, type: 'slime', x, y, speed: 0.5 * speedMultiplier, hp, maxHp: hp, anim: Math.random() * 100, metal: isMetal, isVoid });
+      }
+
+      if (player.character === 'samurai' && pathLevel('katana', 'A') >= 4 && Math.random() < 0.15) {
+        const newEnemy = enemies[enemies.length - 1];
+        if (newEnemy) newEnemy.marked = true;
       }
     }
 
@@ -1404,34 +1867,40 @@ const QUESTION_BANK_FILES={
       const golemChance = Math.min(player.level * 0.01, 0.10);
       if (activeEvent.onlyGolems || Math.random() < golemChance) {
         const golemRoll = Math.random();
+        const isVoid = Math.random() < getVoidChance();
+        const golemHp = isVoid ? baseHp * 2 : 1;
+        const golemSpeedMult = isVoid ? 1.5 : 1;
         if (golemRoll < 0.25) {
-          enemies.push({ id: nextEnemyId++, type: 'golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, lastAbility: Date.now() });
+          enemies.push({ id: nextEnemyId++, type: 'golem', x, y, speed: 0.05 * golemSpeedMult, hp: golemHp, maxHp: golemHp, anim: Math.random() * 100, lastAbility: Date.now(), isVoid });
         } else if (golemRoll < 0.50) {
-          enemies.push({ id: nextEnemyId++, type: 'tree_golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, lastAbility: Date.now(), roots: [] });
+          enemies.push({ id: nextEnemyId++, type: 'tree_golem', x, y, speed: 0.05 * golemSpeedMult, hp: golemHp, maxHp: golemHp, anim: Math.random() * 100, lastAbility: Date.now(), roots: [], isVoid });
         } else if (golemRoll < 0.75) {
-          enemies.push({ id: nextEnemyId++, type: 'smoke_golem', x, y, speed: 0.2, hp: 1, maxHp: 1, anim: Math.random() * 100, sineOffset: 0, smokeTrail: [] });
+          enemies.push({ id: nextEnemyId++, type: 'smoke_golem', x, y, speed: 0.2 * golemSpeedMult, hp: golemHp, maxHp: golemHp, anim: Math.random() * 100, sineOffset: 0, smokeTrail: [], isVoid });
         } else {
-          enemies.push({ id: nextEnemyId++, type: 'fire_golem', x, y, speed: 0.05, hp: 1, maxHp: 1, anim: Math.random() * 100, size: 'full' });
+          enemies.push({ id: nextEnemyId++, type: 'fire_golem', x, y, speed: 0.05 * golemSpeedMult, hp: golemHp, maxHp: golemHp, anim: Math.random() * 100, size: 'full', isVoid });
         }
         return;
       }
 
       if (activeEvent.onlyType) {
-        const baseGroupSize = activeEvent.onlyType === 'bat' ? progress.runNumber + 1 : 1;
+        const isVoidGroup = Math.random() < getVoidChance();
+        let baseGroupSize = activeEvent.onlyType === 'bat' ? progress.runNumber + 1 : 1;
+        if (isVoidGroup && activeEvent.onlyType === 'bat') baseGroupSize *= 2;
         const groupSize = Math.max(1, Math.ceil(baseGroupSize * activeEvent.groupMult));
         for (let i = 0; i < groupSize; i++) {
           const ox = x + (Math.random() - 0.5) * 60;
           const oy = y + (Math.random() - 0.5) * 60;
-          spawnSpecificEnemy(activeEvent.onlyType, ox, oy, speedMultiplier, baseHp, Math.random() < metalChance);
+          spawnSpecificEnemy(activeEvent.onlyType, ox, oy, speedMultiplier, baseHp, Math.random() < metalChance, isVoidGroup);
         }
         return;
       }
 
       if (rand < 0.10) {
-        const groupSize = progress.runNumber + 1;
+        const isVoidGroup = Math.random() < getVoidChance();
+        const groupSize = isVoidGroup ? (progress.runNumber + 1) * 2 : progress.runNumber + 1;
         for (let i = 0; i < groupSize; i++) {
           const batMetal = Math.random() < metalChance;
-          spawnSpecificEnemy('bat', x + (Math.random() - 0.5) * 60, y + (Math.random() - 0.5) * 60, speedMultiplier, baseHp, batMetal);
+          spawnSpecificEnemy('bat', x + (Math.random() - 0.5) * 60, y + (Math.random() - 0.5) * 60, speedMultiplier, baseHp, batMetal, isVoidGroup);
         }
       } else if (rand < 0.20) {
         spawnSpecificEnemy('ghost', x, y, speedMultiplier, baseHp, isMetal);
@@ -1446,6 +1915,63 @@ const QUESTION_BANK_FILES={
       }
     }
 
+    function bossSpawnRate(level) {
+      const tier = Math.max(1, (level || 10) / 10);
+      return Math.pow(3, tier - 1); // spawns per second
+    }
+
+    function spawnBoss(levelNum) {
+      const pool = ['slime', 'bat', 'archer', 'eye', 'ghost', 'troll'];
+      const baseType = pool[Math.floor(Math.random() * pool.length)];
+
+      const side = Math.floor(Math.random() * 4);
+      let x, y;
+      if (side === 0) { x = Math.random() * 800; y = -20; }
+      else if (side === 1) { x = 820; y = Math.random() * 600; }
+      else if (side === 2) { x = Math.random() * 800; y = 620; }
+      else { x = -20; y = Math.random() * 600; }
+
+      const baseHp = Math.floor(player.level / 3) + 1;
+      const speedMultiplier = Math.pow(0.75, progress.runNumber - 1) * activeEvent.speedMult;
+
+      let typeBaseHp = baseHp;
+      let typeBaseSpeed = 0.5 * speedMultiplier;
+      if (baseType === 'bat') { typeBaseHp = 1; typeBaseSpeed = 0.8 * speedMultiplier; }
+      else if (baseType === 'ghost') { typeBaseHp = baseHp; typeBaseSpeed = 0.2 * speedMultiplier; }
+      else if (baseType === 'eye') { typeBaseHp = baseHp * 2; typeBaseSpeed = 0.2 * speedMultiplier; }
+      else if (baseType === 'archer') { typeBaseHp = baseHp; typeBaseSpeed = 0.5 * speedMultiplier; }
+      else if (baseType === 'troll') { typeBaseHp = baseHp * 2; typeBaseSpeed = 0.12 * speedMultiplier; }
+
+      const isVoid = Math.random() < getVoidChance();
+      const bossHp = typeBaseHp * 6 * (isVoid ? 2 : 1); // 500% MORE hp = x6 total; void stacks another x2
+      const bossSpeed = typeBaseSpeed * 0.5;
+
+      const now = Date.now();
+      const boss = {
+        id: nextEnemyId++, type: baseType, x, y,
+        speed: bossSpeed, hp: bossHp, maxHp: bossHp,
+        anim: Math.random() * 100, metal: false,
+        isBoss: true, isVoid, bossLevel: levelNum,
+        lastAbility: now, lastHit: now, lastRegen: now,
+        lastWarp: now, lastLaser: now, lastShot: 0, sineOffset: 0,
+        phased: false, lastPhase: now,
+        circleAngle: Math.random() * Math.PI * 2,
+        healTriggered: { 75: false, 50: false, 25: false },
+        lastFireball: now,
+        cloneCount: 0,
+        spiralAngle: Math.random() * Math.PI * 2,
+        spiralRadius: 220
+      };
+      enemies.push(boss);
+      activeBossId = boss.id;
+
+      for (let k = 0; k < 20; k++) {
+        const angle = Math.random() * Math.PI * 2;
+        particles.push({ x: player.x, y: player.y, vx: Math.cos(angle) * 3, vy: Math.sin(angle) * 3, size: 6, color: '#ff0055', start: now, life: 1200 });
+      }
+      particles.push({ x: 400, y: 100, vx: 0, vy: 0, text: `⚠️ BOSS INCOMING ⚠️`, color: '#ff0055', fontSize: 28, start: now, life: 2500 });
+    }
+
     function maintainEnemies() {
       const target = Math.max(1, player.level + 1);
       if (enemies.length < target && (game.frame % 5 === 0)) spawnEnemy();
@@ -1455,7 +1981,7 @@ const QUESTION_BANK_FILES={
     function findHomingLockTarget() {
       let best = null, bestDist = HOMING_LOCK_RADIUS;
       for (const e of enemies) {
-        if (e.dead) continue;
+        if (e.dead || e.phased) continue;
         const d = Math.hypot(e.x - targetX, e.y - targetY);
         if (d <= bestDist) { bestDist = d; best = e; }
       }
@@ -1519,14 +2045,24 @@ const QUESTION_BANK_FILES={
       clampParticles();
 
       for (const e of enemies) {
-        if (e.dead) continue;
+        if (e.dead || e.phased) continue;
         if (e.type === 'golem' || e.type === 'tree_golem' || e.type === 'fire_golem') continue;
         const dist = Math.hypot(e.x - x, e.y - y);
         if (dist > radius) continue;
-        if (e.type === 'smoke_golem') { markEnemyDead(e, 'smoke'); continue; }
+        if (e.type === 'smoke_golem') {
+          if (e.isVoid) {
+            e.hp -= upgrades.smokeDamage;
+            e.lastHit = now;
+            if (e.hp <= 0) markEnemyDead(e, 'smoke');
+          } else {
+            markEnemyDead(e, 'smoke');
+          }
+          continue;
+        }
         if (!dealsDamage) continue;
         let dmg = upgrades.smokeDamage;
         if (e.cloudDamageAmp && e.cloudDamageAmp > 1) dmg *= e.cloudDamageAmp;
+        if (e.isVoid && e.type === 'archer') dmg *= 0.5;
         e.hp -= dmg;
         e.lastHit = now;
         if (e.hp <= 0) markEnemyDead(e, 'smoke');
@@ -1541,7 +2077,7 @@ const QUESTION_BANK_FILES={
 
       let target = null, minDist = Infinity;
       for (const e of enemies) {
-        if (e.dead) continue;
+        if (e.dead || e.phased) continue;
         const dist = Math.hypot(e.x - player.x, e.y - player.y);
         if (dist < minDist) { minDist = dist; target = e; }
       }
@@ -1577,6 +2113,374 @@ const QUESTION_BANK_FILES={
         if (levelB >= 4) {
           const ex = target.x, ey = target.y, r = radius;
           setTimeout(() => { if (game.active && !game.paused) explodeSmokeAt(ex, ey, r, true); }, 250);
+        }
+      }
+    }
+
+    const GOLEM_WEAKNESS = { shuriken: 'fire_golem', dart: 'tree_golem', smoke: 'smoke_golem', trap: 'golem', katana: 'fire_golem', naginata: 'tree_golem', bow: 'smoke_golem', servant: 'golem' };
+    const GOLEM_TYPES = ['golem', 'tree_golem', 'smoke_golem', 'fire_golem'];
+
+    function dealWeaponDamage(e, dmg, weaponKey) {
+      if (GOLEM_TYPES.includes(e.type)) {
+        if (e.type !== GOLEM_WEAKNESS[weaponKey]) return false; // immune to the wrong weapon
+        if (!e.isVoid) { markEnemyDead(e, weaponKey); return true; }
+      }
+      e.hp -= dmg;
+      e.lastHit = Date.now();
+      if (e.hp <= 0) markEnemyDead(e, weaponKey);
+      return true;
+    }
+
+    // ---------------- KATANA ----------------
+    function katanaSlash() {
+      const now = Date.now();
+      const levelA = pathLevel('katana', 'A');
+      const levelB = pathLevel('katana', 'B');
+
+      let cooldown = upgrades.katanaCooldown;
+      if (levelA >= 1) cooldown *= 0.9;
+      cooldown *= (1 - Math.min(0.2, honor * 0.02));
+      if (now - lastKatana < cooldown) return;
+      lastKatana = now;
+
+      const v = norm(targetX - player.x, targetY - player.y);
+      if (v.d === 0) return;
+      const baseAngle = Math.atan2(v.ny, v.nx);
+
+      let range = upgrades.katanaRange;
+      if (levelA >= 2) range *= 1.3;
+      let arcDeg = upgrades.katanaArc;
+      if (levelB >= 2) arcDeg *= 1.4;
+      const arcRad = arcDeg * Math.PI / 180;
+
+      let dmg = upgrades.katanaDamage * (1 + Math.min(0.2, honor * 0.02));
+      if (levelB >= 1) dmg *= 1.2;
+
+      const numSlashes = 1 + (levelA >= 5 ? wRepeats('katana') : 0);
+      const hitIds = new Set();
+
+      for (let s = 0; s < numSlashes; s++) {
+        const slashAngle = baseAngle + (numSlashes > 1 ? (s - (numSlashes - 1) / 2) * 0.3 : 0);
+        katanaSlashFX.push({ x: player.x, y: player.y, angle: slashAngle, arc: arcRad, range, created: now, life: 200 });
+
+        for (const e of enemies) {
+          if (e.dead || e.phased || hitIds.has(e.id)) continue;
+          const dx = e.x - player.x, dy = e.y - player.y;
+          const dist = Math.hypot(dx, dy);
+          let hit = false, crit = false;
+
+          if (dist <= range) {
+            const angleToE = Math.atan2(dy, dx);
+            let diff = Math.abs(angleToE - slashAngle);
+            if (diff > Math.PI) diff = Math.PI * 2 - diff;
+            if (diff <= arcRad / 2) hit = true;
+          }
+          if (levelA >= 3 && Math.hypot(targetX - e.x, targetY - e.y) < 32) { hit = true; crit = true; }
+
+          if (hit) {
+            hitIds.add(e.id);
+            let finalDmg = dmg;
+            if (crit) finalDmg *= 2;
+            if (levelA >= 4 && e.marked) finalDmg *= 2;
+            const wasDead = e.dead;
+            const landed = dealWeaponDamage(e, finalDmg, 'katana');
+            if (landed && !wasDead) {
+              if (!e.dead && levelB >= 3) {
+                const kv = norm(e.x - player.x, e.y - player.y);
+                e.x += kv.nx * 20; e.y += kv.ny * 20;
+              }
+              if (e.dead && levelB >= 4) spawnKatanaShockwave(e.x, e.y, slashAngle);
+            }
+          }
+        }
+      }
+    }
+
+    function spawnKatanaShockwave(x, y, baseAngle) {
+      const count = 1 + wRepeats('katana');
+      for (let i = 0; i < count; i++) {
+        const angle = baseAngle + (i - (count - 1) / 2) * 0.5;
+        shockwaves.push({ x, y, vx: Math.cos(angle) * 4, vy: Math.sin(angle) * 4, dist: 0, maxDist: 80, dmg: upgrades.katanaDamage, hitIds: [] });
+      }
+    }
+
+    // ---------------- NAGINATA ----------------
+    function naginataThrow() {
+      const now = Date.now();
+      const levelA = pathLevel('naginata', 'A');
+      const levelB = pathLevel('naginata', 'B');
+
+      let cooldown = upgrades.naginataCooldown;
+      if (levelA >= 5) cooldown *= Math.pow(0.9, wRepeats('naginata'));
+      cooldown *= (1 - Math.min(0.2, honor * 0.02));
+      if (now - lastNaginata < cooldown) return;
+      lastNaginata = now;
+
+      let range = upgrades.naginataRange;
+      if (levelA >= 2) range *= 1.3;
+      if (levelA >= 5) range *= (1 + 0.1 * wRepeats('naginata'));
+      let speed = upgrades.naginataSpeed;
+      if (levelA >= 5) speed *= (1 + 0.1 * wRepeats('naginata'));
+
+      let dmg = upgrades.naginataDamage * (1 + Math.min(0.2, honor * 0.02));
+
+      let angle;
+      const nearest = findNearest(player.x, player.y, []);
+      if (levelA >= 1 && nearest && Math.random() < 0.65) {
+        angle = Math.atan2(nearest.y - player.y, nearest.x - player.x);
+      } else {
+        const dirs = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+        angle = dirs[Math.floor(Math.random() * 4)];
+      }
+
+      const spearCount = levelB >= 1 ? 2 : 1;
+      for (let i = 0; i < spearCount; i++) {
+        const a = i === 1 ? angle + Math.PI : angle;
+        naginataSpears.push({ x: player.x, y: player.y, vx: Math.cos(a) * speed, vy: Math.sin(a) * speed, startX: player.x, startY: player.y, range, dmg, pierce: levelA >= 3, spinning: levelB >= 2, hitIds: [] });
+      }
+
+      // Spinning Assault: quick 360 spin around the player before the throw
+      if (levelB >= 3) {
+        const spinRadius = 50;
+        const spinHits = 1 + (levelB >= 5 ? wRepeats('naginata') : 0);
+        for (let hitPass = 0; hitPass < spinHits; hitPass++) {
+          for (const e of enemies) {
+            if (e.dead || e.phased) continue;
+            if (Math.hypot(e.x - player.x, e.y - player.y) < spinRadius) {
+              if (levelB >= 4 && hitPass === 0) {
+                const pv = norm(player.x - e.x, player.y - e.y);
+                e.x += pv.nx * 8; e.y += pv.ny * 8;
+              }
+              dealWeaponDamage(e, dmg, 'naginata');
+            }
+          }
+        }
+        for (let k = 0; k < 16; k++) {
+          const ang = (k / 16) * Math.PI * 2;
+          particles.push({ x: player.x + Math.cos(ang) * spinRadius, y: player.y + Math.sin(ang) * spinRadius, vx: 0, vy: 0, size: 3, color: '#c0c0c0', start: now, life: 200 });
+        }
+      }
+    }
+
+    // ---------------- BOW ----------------
+    function bowShoot() {
+      const now = Date.now();
+      const levelA = pathLevel('bow', 'A');
+      const levelB = pathLevel('bow', 'B');
+
+      let cooldown = upgrades.bowCooldown;
+      if (levelA >= 1) cooldown *= 0.85;
+      cooldown *= (1 - Math.min(0.2, honor * 0.02));
+      if (now - lastBow < cooldown) return;
+
+      let target;
+      if (levelA >= 3) {
+        target = enemies.filter(e => !e.dead && !e.phased).sort((a, b) => b.hp - a.hp)[0];
+      } else {
+        target = findNearest(player.x, player.y, []);
+      }
+      if (!target) return;
+      lastBow = now;
+
+      let speed = upgrades.bowSpeed;
+      if (levelA >= 2) speed *= 1.3;
+      let dmg = upgrades.bowDamage * (1 + Math.min(0.2, honor * 0.02));
+
+      const baseAngle = Math.atan2(target.y - player.y, target.x - player.x);
+      const numArrows = 1 + (levelB >= 1 ? 1 : 0) + (levelB >= 5 ? wRepeats('bow') : 0);
+      const spread = levelB >= 2 ? 0.3 : 0.05;
+      const bleedDmg = levelA >= 5 ? (1 + wRepeats('bow')) : 1;
+
+      for (let i = 0; i < numArrows; i++) {
+        const offset = numArrows > 1 ? (i - (numArrows - 1) / 2) * spread : 0;
+        const angle = baseAngle + offset;
+        bowArrows.push({ x: player.x, y: player.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, dmg, pierce: levelA >= 3, bleed: levelA >= 4, bleedDmg, hitIds: [] });
+      }
+
+      if (levelB >= 3) {
+        const fanCount = 5;
+        for (let i = 0; i < fanCount; i++) {
+          const angle = baseAngle + (i - (fanCount - 1) / 2) * 0.25;
+          bowArrows.push({ x: player.x, y: player.y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, dmg: dmg * 0.6, pierce: levelA >= 3, bleed: levelA >= 4, bleedDmg, hitIds: [] });
+        }
+      }
+      if (levelB >= 4) {
+        arrowRainMarkers.push({ x: target.x, y: target.y, created: now, fuse: 500, dmg: dmg * 1.5 });
+      }
+    }
+
+    // ---------------- SUMMONED SERVANT ----------------
+    function placeServant(x, y) {
+      const now = Date.now();
+      if (!servantReady || now - lastServant < upgrades.servantCooldown) return;
+      lastServant = now;
+      servantReady = false;
+      setTimeout(() => { servantReady = true; }, upgrades.servantCooldown);
+
+      const levelA = pathLevel('servant', 'A');
+      const levelB = pathLevel('servant', 'B');
+
+      const maxHp = levelA >= 3 ? 3 : 1;
+      const count = 1 + (levelB >= 3 ? 1 : 0) + (levelB >= 5 ? wRepeats('servant') : 0);
+      for (let i = 0; i < count; i++) {
+        const ox = x + i * 30 - (count - 1) * 15;
+        samuraiServants.push({
+          id: nextEnemyId++, x: ox, y, originX: ox, originY: y, hp: maxHp, maxHp,
+          range: levelA >= 1 ? 135 : 90,
+          dmg: upgrades.servantDamage + (levelA >= 4 ? wRepeats('servant') : 0),
+          lastAttack: 0,
+          attackCooldown: levelA >= 3 ? 500 : 800,
+          kills: 0,
+          maxKills: 1 + (levelA >= 2 ? 1 : 0),
+          lifetime: levelB >= 2 ? 22000 : 15000,
+          created: now,
+          targetId: null
+        });
+      }
+    }
+
+    function updateSamuraiWeapons() {
+      const now = Date.now();
+
+      // Katana slash FX fade-out
+      katanaSlashFX = katanaSlashFX.filter(fx => now - fx.created < fx.life);
+
+      // Shockwaves (Katana path B)
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.x += sw.vx; sw.y += sw.vy;
+        sw.dist += Math.hypot(sw.vx, sw.vy);
+        if (sw.dist > sw.maxDist) { shockwaves.splice(i, 1); continue; }
+        for (const e of enemies) {
+          if (e.dead || e.phased || sw.hitIds.includes(e.id)) continue;
+          if (Math.hypot(e.x - sw.x, e.y - sw.y) < 24) {
+            sw.hitIds.push(e.id);
+            dealWeaponDamage(e, sw.dmg, 'katana');
+          }
+        }
+      }
+
+      // Naginata spears
+      for (let i = naginataSpears.length - 1; i >= 0; i--) {
+        const sp = naginataSpears[i];
+        sp.x += sp.vx; sp.y += sp.vy;
+        const traveled = Math.hypot(sp.x - sp.startX, sp.y - sp.startY);
+        if (traveled > sp.range || sp.x < -30 || sp.x > 830 || sp.y < -30 || sp.y > 630) { naginataSpears.splice(i, 1); continue; }
+
+        for (const e of enemies) {
+          if (e.dead || e.phased || sp.hitIds.includes(e.id)) continue;
+          if (Math.hypot(e.x - sp.x, e.y - sp.y) < 26) {
+            sp.hitIds.push(e.id);
+            dealWeaponDamage(e, sp.dmg, 'naginata');
+            if (sp.spinning) {
+              for (let k = 0; k < 6; k++) {
+                const ang = Math.random() * Math.PI * 2;
+                particles.push({ x: e.x, y: e.y, vx: Math.cos(ang) * 2, vy: Math.sin(ang) * 2, size: 3, color: '#c0c0c0', start: now, life: 300 });
+              }
+            }
+            if (!sp.pierce) { naginataSpears.splice(i, 1); break; }
+            if (sp.hitIds.length >= 3) {
+              lastNaginata -= upgrades.naginataCooldown * 0.4;
+            }
+          }
+        }
+      }
+
+      // Bow arrows
+      for (let i = bowArrows.length - 1; i >= 0; i--) {
+        const ar = bowArrows[i];
+        ar.x += ar.vx; ar.y += ar.vy;
+        if (ar.x < -30 || ar.x > 830 || ar.y < -30 || ar.y > 630) { bowArrows.splice(i, 1); continue; }
+
+        let removed = false;
+        for (const e of enemies) {
+          if (e.dead || e.phased || ar.hitIds.includes(e.id)) continue;
+          if (Math.hypot(e.x - ar.x, e.y - ar.y) < 24) {
+            ar.hitIds.push(e.id);
+            dealWeaponDamage(e, ar.dmg, 'bow');
+            if (ar.bleed && !e.dead) {
+              e.bleedUntil = Math.max(e.bleedUntil || 0, now + 3000);
+              e.bleedNextTick = Math.min(e.bleedNextTick || Infinity, now + 500);
+              e.bleedDmg = Math.max(e.bleedDmg || 0, ar.bleedDmg);
+            }
+            if (!ar.pierce) { bowArrows.splice(i, 1); removed = true; break; }
+          }
+        }
+        if (removed) continue;
+      }
+
+      // Arrow rain markers (Bow path B)
+      for (let i = arrowRainMarkers.length - 1; i >= 0; i--) {
+        const m = arrowRainMarkers[i];
+        if (now - m.created > m.fuse) {
+          arrowRainMarkers.splice(i, 1);
+          for (const e of enemies) {
+            if (e.dead || e.phased) continue;
+            if (Math.hypot(e.x - m.x, e.y - m.y) < 45) dealWeaponDamage(e, m.dmg, 'bow');
+          }
+          for (let k = 0; k < 14; k++) {
+            const ang = Math.random() * Math.PI * 2;
+            particles.push({ x: m.x + Math.cos(ang) * 20, y: m.y + Math.sin(ang) * 20, vx: 0, vy: 2, size: 3, color: '#8b7355', start: now, life: 400 });
+          }
+        }
+      }
+
+      // Summoned servants
+      for (let i = samuraiServants.length - 1; i >= 0; i--) {
+        const s = samuraiServants[i];
+        if (now - s.created > s.lifetime) { samuraiServants.splice(i, 1); continue; }
+
+        // Gently draw nearby enemies toward the servant's post
+        for (const e of enemies) {
+          if (e.dead || e.phased) continue;
+          const d = Math.hypot(e.x - s.originX, e.y - s.originY);
+          if (d < s.range * 1.3 && d > 20) {
+            const pv = norm(s.originX - e.x, s.originY - e.y);
+            e.x += pv.nx * 0.3; e.y += pv.ny * 0.3;
+          }
+        }
+
+        // Acquire or validate a target within its leashed territory
+        let target = s.targetId ? enemies.find(e => e.id === s.targetId && !e.dead && !e.phased) : null;
+        if (target && Math.hypot(target.x - s.originX, target.y - s.originY) > s.range) target = null;
+        if (!target) {
+          let minDist = s.range;
+          for (const e of enemies) {
+            if (e.dead || e.phased) continue;
+            const d = Math.hypot(e.x - s.originX, e.y - s.originY);
+            if (d < minDist) { minDist = d; target = e; }
+          }
+          s.targetId = target ? target.id : null;
+        }
+
+        if (target) {
+          // Move in on the target so it visibly closes the distance to land the kill
+          const distToTarget = Math.hypot(target.x - s.x, target.y - s.y);
+          if (distToTarget > 22) {
+            const mv = norm(target.x - s.x, target.y - s.y);
+            s.x += mv.nx * 2.2;
+            s.y += mv.ny * 2.2;
+          } else if (now - s.lastAttack > s.attackCooldown) {
+            s.lastAttack = now;
+            const wasDead = target.dead;
+            const landed = dealWeaponDamage(target, s.dmg, 'servant');
+            if (landed && !wasDead && target.dead) {
+              s.kills++;
+              s.targetId = null;
+              if (pathLevel('servant', 'A') >= 3) s.hp = Math.min(s.maxHp, s.hp + 1);
+              if (s.kills > s.maxKills) { samuraiServants.splice(i, 1); continue; }
+            }
+            for (let k = 0; k < 4; k++) {
+              particles.push({ x: target.x, y: target.y, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: 3, color: '#9b59b6', start: now, life: 250 });
+            }
+          }
+        } else {
+          // Nothing to fight — drift back to its post
+          const distHome = Math.hypot(s.originX - s.x, s.originY - s.y);
+          if (distHome > 4) {
+            const mv = norm(s.originX - s.x, s.originY - s.y);
+            s.x += mv.nx * 1.2; s.y += mv.ny * 1.2;
+          }
         }
       }
     }
@@ -1623,7 +2527,7 @@ const QUESTION_BANK_FILES={
         const angle = angles[i];
         darts.push({
           x: player.x, y: player.y,
-          vx: Math.cos(angle) * 4, vy: Math.sin(angle) * 4,
+          vx: Math.cos(angle) * 2, vy: Math.sin(angle) * 2,
           startX: player.x, startY: player.y,
           maxRange: upgrades.dartRange,
           large: levelA >= 2,
@@ -1638,7 +2542,7 @@ const QUESTION_BANK_FILES={
     function findNearest(x, y, excludeIds) {
       let nearest = null, minDist = Infinity;
       for (const e of enemies) {
-        if (e.dead) continue;
+        if (e.dead || e.phased) continue;
         if (excludeIds && excludeIds.includes(e.id)) continue;
         const d = Math.hypot(e.x - x, e.y - y);
         if (d < minDist) { minDist = d; nearest = e; }
@@ -1652,9 +2556,14 @@ const QUESTION_BANK_FILES={
       e.dead = true;
       deadQueue.push(e.id);
       createDefeatParticles(e.x, e.y, e.type);
+
+      if (e.rewardless) return; // boss clones etc. give no exp/coins/kill credit
+
       player.exp += 10;
-      player.kills++;
-      progress.runCoins += activeEvent.coinMult;
+      player.kills += runPowerupEffects.killValueMult;
+      progress.runCoins += activeEvent.coinMult + runPowerupEffects.coinBonusPerKill;
+
+      if (player.character === 'samurai') honor = Math.min(10, honor + 1);
 
       // Enemies killed while standing in a stunning-mist smoke cloud always
       // count as a smoke bomb kill, regardless of what actually finished them off.
@@ -1662,11 +2571,56 @@ const QUESTION_BANK_FILES={
 
       if (source && progress.weapons[source]) {
         const w = progress.weapons[source];
-        w.kills++;
+        w.kills += runPowerupEffects.killValueMult;
         if (!w.unlocked && w.kills >= WEAPON_UNLOCK_KILLS) {
           w.unlocked = true;
         }
         saveProgress();
+      }
+
+      // Void variant on-death abilities
+      if (e.isVoid && !e.isBoss) {
+        if (e.type === 'slime') {
+          const miniHp = Math.max(1, Math.floor(e.maxHp / 2));
+          for (let i = 0; i < 2; i++) {
+            const ox = e.x + (Math.random() - 0.5) * 30;
+            const oy = e.y + (Math.random() - 0.5) * 30;
+            enemies.push({ id: nextEnemyId++, type: 'slime', x: ox, y: oy, speed: e.speed, hp: miniHp, maxHp: miniHp, anim: Math.random() * 100, metal: false, isVoid: false });
+          }
+        } else if (e.type === 'troll') {
+          const slimeHp = Math.floor(player.level / 3) + 1;
+          const batSpeed = 0.8 * (Math.pow(0.75, progress.runNumber - 1) * activeEvent.speedMult);
+          enemies.push({ id: nextEnemyId++, type: 'archer', x: e.x, y: e.y, speed: batSpeed, hp: slimeHp, maxHp: slimeHp, anim: Math.random() * 100, lastShot: Infinity, metal: false, isVoid: false, meleeCharger: true });
+        }
+      }
+
+      // Boss on-death ability + rewards
+      if (e.isBoss) {
+        if (e.type === 'slime') {
+          const count = Math.max(1, e.bossLevel || 10);
+          for (let i = 0; i < count; i++) {
+            const angle = (i / count) * Math.PI * 2;
+            const ox = e.x + Math.cos(angle) * 30;
+            const oy = e.y + Math.sin(angle) * 30;
+            const hp = Math.floor(player.level / 3) + 1;
+            enemies.push({ id: nextEnemyId++, type: 'slime', x: ox, y: oy, speed: 0.5, hp, maxHp: hp, anim: Math.random() * 100, metal: false, isVoid: false });
+          }
+        }
+        if (activeBossId === e.id) activeBossId = null;
+        healingOrbs = healingOrbs.filter(o => o.ownerId !== e.id);
+
+        const wave = e.bossLevel || player.level;
+        progress.runCoins += 5 * wave;
+        for (const key of ['shuriken', 'dart', 'smoke', 'trap']) {
+          const w = progress.weapons[key];
+          w.kills += wave;
+          if (!w.unlocked && w.kills >= WEAPON_UNLOCK_KILLS) w.unlocked = true;
+        }
+        saveProgress();
+
+        game.paused = true;
+        quiz.forPowerup = false;
+        setTimeout(() => { showUpgrades(1, false); }, 500);
       }
     }
     function sweepDeadEnemies() {
@@ -1693,9 +2647,15 @@ const QUESTION_BANK_FILES={
         game.frame++;
 
         maintainEnemies();
-        shoot();
-        if (upgrades.smokeUnlocked) throwSmoke();
-        if (upgrades.dartUnlocked) shootDart();
+        if (player.character === 'samurai') {
+          katanaSlash();
+          if (upgrades.naginataUnlocked) naginataThrow();
+          if (upgrades.bowUnlocked) bowShoot();
+        } else {
+          shoot();
+          if (upgrades.smokeUnlocked) throwSmoke();
+          if (upgrades.dartUnlocked) shootDart();
+        }
 
         for (let i = bullets.length - 1; i >= 0; i--) {
           const b = bullets[i];
@@ -1727,7 +2687,7 @@ const QUESTION_BANK_FILES={
           const nowP = Date.now();
           if (nowP - p.created > p.life) { poisonPools.splice(i, 1); continue; }
           for (const e of enemies) {
-            if (e.dead) continue;
+            if (e.dead || e.phased) continue;
             if (Math.hypot(e.x - p.x, e.y - p.y) < 20) {
               e.poisonUntil = Math.max(e.poisonUntil || 0, nowP + 1000);
               e.poisonDmg = Math.max(e.poisonDmg || 0, p.dmg);
@@ -1738,6 +2698,89 @@ const QUESTION_BANK_FILES={
         {
           const nowC = Date.now();
           smokeClouds = smokeClouds.filter(c => c.expiresAt > nowC);
+        }
+
+        if (player.character === 'samurai') updateSamuraiWeapons();
+
+        // Ectoplasm markers (Ghost boss) — after the fuse runs out, spawn a ghost slime
+        {
+          const nowE = Date.now();
+          for (let i = ectoplasmMarkers.length - 1; i >= 0; i--) {
+            const m = ectoplasmMarkers[i];
+            if (nowE - m.created > m.fuse) {
+              ectoplasmMarkers.splice(i, 1);
+              const ghostBaseHp = Math.floor(player.level / 3) + 1;
+              const slimeHp = Math.max(1, Math.floor(ghostBaseHp / 8));
+              enemies.push({ id: nextEnemyId++, type: 'slime', x: m.x, y: m.y, speed: 0.5, hp: slimeHp, maxHp: slimeHp, anim: Math.random() * 100, metal: false, isVoid: false, isGhostSlime: true });
+            }
+          }
+          voidLasers = voidLasers.filter(l => nowE - l.created < l.life);
+        }
+
+        // Troll boss fireballs — must be shot down or they hit the player
+        for (let i = trollFireballs.length - 1; i >= 0; i--) {
+          const fb = trollFireballs[i];
+          fb.x += fb.vx; fb.y += fb.vy;
+          if (fb.x < -30 || fb.x > 830 || fb.y < -30 || fb.y > 630) { trollFireballs.splice(i, 1); continue; }
+
+          const distP = Math.hypot(fb.x - player.x, fb.y - player.y);
+          if (distP < 22) {
+            player.hp -= 15 * activeEvent.damageMult;
+            honor = 0;
+            trollFireballs.splice(i, 1);
+            if (player.hp <= 0) {
+              lastDeathInfo = { type: 'troll', damage: 15 * activeEvent.damageMult, metal: false, size: null, method: 'melee' };
+              updateUI(); gameOver();
+            }
+            continue;
+          }
+
+          let destroyed = false;
+          for (let bi = bullets.length - 1; bi >= 0; bi--) {
+            const b = bullets[bi];
+            if (Math.hypot(b.x - fb.x, b.y - fb.y) < 16) { fb.hp -= (b.dmg || upgrades.damage); bullets.splice(bi, 1); destroyed = fb.hp <= 0; break; }
+          }
+          if (!destroyed) {
+            for (let di = darts.length - 1; di >= 0; di--) {
+              const d = darts[di];
+              if (Math.hypot(d.x - fb.x, d.y - fb.y) < 16) { fb.hp -= upgrades.damage; darts.splice(di, 1); destroyed = fb.hp <= 0; break; }
+            }
+          }
+          if (destroyed) {
+            trollFireballs.splice(i, 1);
+            const nowFx = Date.now();
+            for (let k = 0; k < 10; k++) {
+              const angle = Math.random() * Math.PI * 2;
+              particles.push({ x: fb.x, y: fb.y, vx: Math.cos(angle) * 2, vy: Math.sin(angle) * 2, size: 5, color: '#ff6600', start: nowFx, life: 400 });
+            }
+          }
+        }
+
+        // Troll boss healing orbs — must be destroyed to stop the boosted regen
+        for (let i = healingOrbs.length - 1; i >= 0; i--) {
+          const orb = healingOrbs[i];
+          if (orb.dead) { healingOrbs.splice(i, 1); continue; }
+
+          let destroyed = false;
+          for (let bi = bullets.length - 1; bi >= 0; bi--) {
+            const b = bullets[bi];
+            if (Math.hypot(b.x - orb.x, b.y - orb.y) < 14) { orb.hp -= (b.dmg || upgrades.damage); bullets.splice(bi, 1); destroyed = orb.hp <= 0; break; }
+          }
+          if (!destroyed) {
+            for (let di = darts.length - 1; di >= 0; di--) {
+              const d = darts[di];
+              if (Math.hypot(d.x - orb.x, d.y - orb.y) < 14) { orb.hp -= upgrades.damage; darts.splice(di, 1); destroyed = orb.hp <= 0; break; }
+            }
+          }
+          if (destroyed) {
+            orb.dead = true;
+            healingOrbs.splice(i, 1);
+            const nowOx = Date.now();
+            for (let k = 0; k < 10; k++) {
+              const angle = Math.random() * Math.PI * 2;
+              particles.push({ x: orb.x, y: orb.y, vx: Math.cos(angle) * 2, vy: Math.sin(angle) * 2, size: 5, color: '#2ecc71', start: nowOx, life: 400 });
+            }
+          }
         }
 
         // Storm of Steel magazine regen (passive recharge while in manual-fire mode)
@@ -1773,7 +2816,7 @@ const QUESTION_BANK_FILES={
             // Minefield: pulling force nudges nearby enemies toward the trap
             if (levelA >= 2) {
               for (const e of enemies) {
-                if (e.dead) continue;
+                if (e.dead || e.phased) continue;
                 const d = Math.hypot(e.x - trap.x, e.y - trap.y);
                 if (d > 45 && d < 150 && Math.random() < 0.05) {
                   const pv = norm(trap.x - e.x, trap.y - e.y);
@@ -1787,11 +2830,17 @@ const QUESTION_BANK_FILES={
             let shouldExplode = false;
             
             for (const e of enemies) {
-              if (e.dead) continue;
+              if (e.dead || e.phased) continue;
               const d = Math.hypot(e.x - trap.x, e.y - trap.y);
               if (d < 45) {
                 if (e.type === 'golem') {
-                  markEnemyDead(e, 'trap');
+                  if (e.isVoid) {
+                    e.hp -= upgrades.shadowDamage;
+                    e.lastHit = now;
+                    if (e.hp <= 0) markEnemyDead(e, 'trap');
+                  } else {
+                    markEnemyDead(e, 'trap');
+                  }
                   shouldExplode = true;
                   any = true;
                 } else if (levelB >= 3) {
@@ -1807,6 +2856,7 @@ const QUESTION_BANK_FILES={
                 } else {
                   let dmg = upgrades.shadowDamage;
                   if (levelA >= 1 && !trap.firstProcUsed) dmg *= 1.5;
+                  if (e.isVoid && e.type === 'archer') dmg *= 0.5;
                   e.hp -= dmg;
                   e.lastHit = now;
                   shouldExplode = true;
@@ -1817,7 +2867,13 @@ const QUESTION_BANK_FILES={
                     const od = Math.hypot(other.x - trap.x, other.y - trap.y);
                     if (od < splashRadius) {
                       if (other.type === 'golem') {
-                        markEnemyDead(other, 'trap');
+                        if (other.isVoid) {
+                          other.hp -= Math.ceil(dmg / 2);
+                          other.lastHit = now;
+                          if (other.hp <= 0) markEnemyDead(other, 'trap');
+                        } else {
+                          markEnemyDead(other, 'trap');
+                        }
                       } else {
                         other.hp -= Math.ceil(dmg / 2);
                         other.lastHit = now;
@@ -1877,9 +2933,43 @@ const QUESTION_BANK_FILES={
 
           if (e.type === 'troll' && e.hp < e.maxHp) {
             const now = Date.now();
-            if (now - (e.lastHit || 0) >= TROLL_REGEN_INTERVAL && now - (e.lastRegen || 0) >= TROLL_REGEN_INTERVAL) {
-              e.hp = Math.min(e.maxHp, e.hp + 1);
-              e.lastRegen = now;
+            const regenAmount = e.isVoid ? 2 : 1;
+            const activeOrbs = e.isBoss ? healingOrbs.filter(o => o.ownerId === e.id && !o.dead) : [];
+            if (e.isBoss && activeOrbs.length > 0) {
+              const healPerSec = Math.max(1, (e.bossLevel || 10) / 5);
+              if (!e.lastBoostTick) e.lastBoostTick = now;
+              const elapsed = (now - e.lastBoostTick) / 1000;
+              const healAmt = elapsed * healPerSec;
+              if (healAmt >= 1) {
+                e.hp = Math.min(e.maxHp, e.hp + Math.floor(healAmt));
+                e.lastBoostTick = now;
+              }
+            } else {
+              e.lastBoostTick = now;
+              if (now - (e.lastHit || 0) >= TROLL_REGEN_INTERVAL && now - (e.lastRegen || 0) >= TROLL_REGEN_INTERVAL) {
+                e.hp = Math.min(e.maxHp, e.hp + regenAmount);
+                e.lastRegen = now;
+              }
+            }
+          }
+
+          if (e.type === 'troll' && e.isBoss) {
+            const pct = e.hp / e.maxHp;
+            if (!e.healTriggered) e.healTriggered = { 75: false, 50: false, 25: false };
+            for (const threshold of [75, 50, 25]) {
+              if (!e.healTriggered[threshold] && pct <= threshold / 100) {
+                e.healTriggered[threshold] = true;
+                for (let k = 0; k < 3; k++) {
+                  const angle = (k / 3) * Math.PI * 2;
+                  healingOrbs.push({ id: nextEnemyId++, ownerId: e.id, x: e.x + Math.cos(angle) * 60, y: e.y + Math.sin(angle) * 60, hp: 15, maxHp: 15, dead: false });
+                }
+              }
+            }
+            const nowFb = Date.now();
+            if (nowFb - (e.lastFireball || 0) > 4000) {
+              e.lastFireball = nowFb;
+              const fv = norm(player.x - e.x, player.y - e.y);
+              trollFireballs.push({ id: nextEnemyId++, ownerId: e.id, x: e.x, y: e.y, vx: fv.nx * 1.2, vy: fv.ny * 1.2, hp: 3, maxHp: 3, created: nowFb });
             }
           }
 
@@ -1951,15 +3041,39 @@ const QUESTION_BANK_FILES={
           if (isStunned) {
             // Frozen: no movement, no special abilities this frame.
           } else if (e.type === 'ghost') {
-            e.sineOffset = (e.sineOffset || 0) + 0.025;
-            const perpX = v.d === 0 ? 0 : -v.ny;
-            const perpY = v.d === 0 ? 0 : v.nx;
-            const sineWave = Math.sin(e.sineOffset) * 35;
-            e.x += v.nx * effectiveSpeed + perpX * sineWave * 0.05;
-            e.y += v.ny * effectiveSpeed + perpY * sineWave * 0.05;
+            const now = Date.now();
+            if (e.isBoss || e.isVoid) {
+              if (now - e.lastPhase > 1500) {
+                e.lastPhase = now;
+                e.phased = !e.phased;
+              }
+            }
+            if (e.isBoss) {
+              e.spiralAngle = (e.spiralAngle || 0) + 0.03;
+              e.spiralRadius = Math.max(20, (e.spiralRadius || 220) - 0.3);
+              e.x = player.x + Math.cos(e.spiralAngle) * e.spiralRadius;
+              e.y = player.y + Math.sin(e.spiralAngle) * e.spiralRadius;
+              if (now - e.lastAbility > 1000 / bossSpawnRate(e.bossLevel)) {
+                e.lastAbility = now;
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 80 + Math.random() * 200;
+                ectoplasmMarkers.push({ x: player.x + Math.cos(angle) * dist, y: player.y + Math.sin(angle) * dist, created: now, fuse: 3000, bossLevel: e.bossLevel });
+                for (let k = 0; k < 6; k++) {
+                  particles.push({ x: e.x, y: e.y, vx: (Math.random() - 0.5) * 2, vy: (Math.random() - 0.5) * 2, size: 4, color: '#c8ffd4', start: now, life: 500 });
+                }
+              }
+            } else {
+              e.sineOffset = (e.sineOffset || 0) + 0.025;
+              const perpX = v.d === 0 ? 0 : -v.ny;
+              const perpY = v.d === 0 ? 0 : v.nx;
+              const sineWave = Math.sin(e.sineOffset) * 35;
+              e.x += v.nx * effectiveSpeed + perpX * sineWave * 0.05;
+              e.y += v.ny * effectiveSpeed + perpY * sineWave * 0.05;
+            }
           } else if (e.type === 'eye') {
             const now = Date.now();
-            if (now - e.lastWarp > 3000) {
+            const warpInterval = e.isVoid ? 1500 : 3000;
+            if (now - e.lastWarp > warpInterval) {
               const currentDist = Math.hypot(e.x - player.x, e.y - player.y);
               const angle = Math.random() * Math.PI * 2;
               e.x = Math.max(50, Math.min(750, player.x + Math.cos(angle) * currentDist));
@@ -1969,13 +3083,53 @@ const QUESTION_BANK_FILES={
                 particles.push({ x: e.x + (Math.random() - 0.5) * 40, y: e.y + (Math.random() - 0.5) * 40, vx: (Math.random() - 0.5) * 3, vy: (Math.random() - 0.5) * 3, size: Math.random() * 6 + 3, color: '#8b00ff', start: now, life: 600 });
               }
               clampParticles();
+              if (e.isBoss) {
+                const cloneCap = Math.max(1, Math.floor((e.bossLevel || 10) / 5));
+                const existingClones = enemies.filter(o => !o.dead && o.type === 'eye' && o.rewardless && o.bossOwnerId === e.id).length;
+                if (existingClones < cloneCap) {
+                  enemies.push({ id: nextEnemyId++, type: 'eye', x: e.x + 30, y: e.y + 30, speed: e.speed, hp: 1, maxHp: 1, anim: Math.random() * 100, lastWarp: now + 99999, metal: false, isVoid: false, rewardless: true, bossOwnerId: e.id });
+                }
+              }
+            }
+            if (e.isVoid && now - e.lastLaser > 4000) {
+              e.lastLaser = now;
+              voidLasers.push({ x1: e.x, y1: e.y, x2: player.x, y2: player.y, created: now, life: 400 });
+              player.hp -= 12 * activeEvent.damageMult;
+              honor = 0;
+              if (player.hp <= 0) {
+                lastDeathInfo = { type: 'eye', damage: 12 * activeEvent.damageMult, metal: !!e.metal, size: null, method: 'melee' };
+                updateUI();
+                gameOver();
+                return;
+              }
             }
             e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed;
           } else if (e.type === 'archer') {
-            if (v.d > 250) { e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed; }
-            else {
-              const now = Date.now();
-              if (now - e.lastShot > 2000) {
+            const now = Date.now();
+            const shootInterval = (e.isBoss || e.isVoid) ? 1000 : 2000;
+            const range = e.isVoid ? 312 : 250;
+
+            if (e.meleeCharger) {
+              e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed;
+            } else if (e.isVoid) {
+              e.circleAngle = (e.circleAngle || 0) + 0.02;
+              e.x = player.x + Math.cos(e.circleAngle) * range;
+              e.y = player.y + Math.sin(e.circleAngle) * range;
+              if (now - e.lastShot > shootInterval) {
+                e.lastShot = now;
+                const arrowSpeed = 2.6;
+                const av = norm(player.x - e.x, player.y - e.y);
+                enemyArrows.push({ x: e.x, y: e.y, vx: av.nx * arrowSpeed, vy: av.ny * arrowSpeed, rot: Math.atan2(av.ny, av.nx), metal: !!e.metal });
+              }
+            } else if (v.d > range) {
+              e.x += v.nx * effectiveSpeed; e.y += v.ny * effectiveSpeed;
+            } else {
+              if (e.isBoss) {
+                e.patrolDir = e.patrolDir || 1;
+                e.x += e.patrolDir * effectiveSpeed * 1.5;
+                if (e.x < 60 || e.x > 740) e.patrolDir *= -1;
+              }
+              if (now - e.lastShot > shootInterval) {
                 e.lastShot = now;
                 const arrowSpeed = 2.6;
                 enemyArrows.push({ x: e.x, y: e.y, vx: v.nx * arrowSpeed, vy: v.ny * arrowSpeed, rot: Math.atan2(player.y - e.y, player.x - e.x), metal: !!e.metal });
@@ -1989,7 +3143,7 @@ const QUESTION_BANK_FILES={
               const otherEnemies = enemies.filter(other => other !== e && !other.dead && other.type !== 'golem' && other.type !== 'tree_golem' && other.type !== 'smoke_golem' && other.type !== 'fire_golem');
               if (otherEnemies.length > 0) {
                 const target = otherEnemies[Math.floor(Math.random() * otherEnemies.length)];
-                const healthMultiplier = target.smokeBuffed ? 3 : 2;
+                const healthMultiplier = (target.smokeBuffed ? 3 : 2) * (e.isVoid ? 1.5 : 1);
                 target.hp *= healthMultiplier;
                 target.maxHp *= healthMultiplier;
                 for (let k = 0; k < 12; k++) {
@@ -2010,7 +3164,7 @@ const QUESTION_BANK_FILES={
             const now = Date.now();
             if (now - e.lastAbility > 5000) {
               e.lastAbility = now;
-              const numRoots = Math.floor(Math.random() * 4) + 2;
+              const numRoots = Math.ceil((Math.floor(Math.random() * 4) + 2) * (e.isVoid ? 1.5 : 1));
               for (let i = 0; i < numRoots; i++) {
                 const offsetX = (Math.random() - 0.5) * 60;
                 const offsetY = (Math.random() - 0.5) * 60;
@@ -2042,9 +3196,37 @@ const QUESTION_BANK_FILES={
             e.x += v.nx * e.speed; e.y += v.ny * e.speed;
           } else {
             e.x += v.nx * e.speed; e.y += v.ny * e.speed;
+            if (e.type === 'slime' && e.isBoss) {
+              const nowTrail = Date.now();
+              const spawnInterval = 1000 / bossSpawnRate(e.bossLevel);
+              if (nowTrail - (e.lastAbility || 0) > spawnInterval) {
+                e.lastAbility = nowTrail;
+                const hp = Math.floor(player.level / 3) + 1;
+                enemies.push({ id: nextEnemyId++, type: 'slime', x: e.x - v.nx * 20, y: e.y - v.ny * 20, speed: 0.5, hp, maxHp: hp, anim: Math.random() * 100, metal: false, isVoid: false });
+              }
+            }
+            if (e.type === 'bat' && e.isBoss) {
+              const nowSwarm = Date.now();
+              const swarmInterval = 1000 / bossSpawnRate(e.bossLevel);
+              if (nowSwarm - (e.lastAbility || 0) > swarmInterval) {
+                e.lastAbility = nowSwarm;
+                const tier = Math.max(1, (e.bossLevel || 10) / 10);
+                const swarmSize = Math.round(((e.bossLevel || 10) / 2) * Math.pow(2, tier - 1));
+                const dirs = [
+                  { x: 0, y: -1 }, { x: 1, y: 0 }, { x: 0, y: 1 }, { x: -1, y: 0 },
+                  { x: 0.707, y: -0.707 }, { x: 0.707, y: 0.707 }, { x: -0.707, y: 0.707 }, { x: -0.707, y: -0.707 }
+                ];
+                const dir = dirs[Math.floor(Math.random() * dirs.length)];
+                const spawnX = player.x - dir.x * 500;
+                const spawnY = player.y - dir.y * 500;
+                for (let s = 0; s < swarmSize; s++) {
+                  spawnSpecificEnemy('bat', spawnX + (Math.random() - 0.5) * 60, spawnY + (Math.random() - 0.5) * 60, e.speed / 0.4, Math.floor(player.level / 3) + 1, false, false);
+                }
+              }
+            }
           }
 
-          if (v.d < 60 && !e.dead) {
+          if (v.d < 60 && !e.dead && !e.phased) {
             let damage = 10;
             if (e.type === 'bat') damage = 5;
             if (e.type === 'golem') damage = 50;
@@ -2058,6 +3240,7 @@ const QUESTION_BANK_FILES={
             damage *= activeEvent.damageMult;
             
             player.hp -= damage;
+            honor = 0;
             markEnemyDead(e);
             if (player.hp <= 0) {
               lastDeathInfo = { type: e.type, damage, metal: !!e.metal, size: e.size || null, method: 'melee' };
@@ -2094,7 +3277,7 @@ const QUESTION_BANK_FILES={
           if (j < 0 || j >= bullets.length) continue;
           
           for (const e of enemies) {
-            if (e.dead) continue;
+            if (e.dead || e.phased) continue;
             if (b.hitIds.includes(e.id)) continue;
             const dist = Math.hypot(b.x - e.x, b.y - e.y);
             if (Number.isFinite(dist) && dist < 40) {
@@ -2168,7 +3351,8 @@ const QUESTION_BANK_FILES={
               }
               
               if (!e.metal) {
-                const dmgDealt = b.dmg || upgrades.damage;
+                let dmgDealt = b.dmg || upgrades.damage;
+                if (e.isVoid && e.type === 'archer') dmgDealt *= 0.5;
                 e.hp -= dmgDealt;
                 e.lastHit = Date.now();
                 if (e.hp <= 0) {
@@ -2232,15 +3416,24 @@ const QUESTION_BANK_FILES={
 
           let hit = false;
           for (const e of enemies) {
-            if (e.dead) continue;
+            if (e.dead || e.phased) continue;
             if (d.hitIds && d.hitIds.includes(e.id)) continue;
             
             const dist = Math.hypot(d.x - e.x, d.y - e.y);
             const hitRadius = d.large ? 38 : 30;
             if (Number.isFinite(dist) && dist < hitRadius) {
               if (e.type === 'tree_golem') {
-                markEnemyDead(e, 'dart');
-                rootSpikes = rootSpikes.filter(root => root.ownerId !== e.id);
+                if (e.isVoid) {
+                  e.hp -= upgrades.damage;
+                  e.lastHit = Date.now();
+                  if (e.hp <= 0) {
+                    markEnemyDead(e, 'dart');
+                    rootSpikes = rootSpikes.filter(root => root.ownerId !== e.id);
+                  }
+                } else {
+                  markEnemyDead(e, 'dart');
+                  rootSpikes = rootSpikes.filter(root => root.ownerId !== e.id);
+                }
                 darts.splice(i, 1);
                 hit = true;
                 break;
@@ -2259,6 +3452,7 @@ const QUESTION_BANK_FILES={
               let dmgDealt = upgrades.damage;
               if (levelA >= 4 && wasFullHp) dmgDealt *= 2;
               if (e.cloudDamageAmp && e.cloudDamageAmp > 1) dmgDealt *= e.cloudDamageAmp;
+              if (e.isVoid && e.type === 'archer') dmgDealt *= 0.5;
 
               e.hp -= dmgDealt;
               e.lastHit = Date.now();
@@ -2282,7 +3476,7 @@ const QUESTION_BANK_FILES={
                   const dir = cardinals[s % cardinals.length];
                   darts.push({
                     x: e.x, y: e.y,
-                    vx: dir.x * 3, vy: dir.y * 3,
+                    vx: dir.x * 1.5, vy: dir.y * 1.5,
                     startX: e.x, startY: e.y,
                     maxRange: upgrades.dartRange * 0.5,
                     large: false, boomerang: false, returning: false, broken: true,
@@ -2307,6 +3501,7 @@ const QUESTION_BANK_FILES={
           const dist = Math.hypot(a.x - player.x, a.y - player.y);
           if (dist < 30) {
             player.hp -= 10 * activeEvent.damageMult;
+            honor = 0;
             enemyArrows.splice(i, 1);
             if (player.hp <= 0) {
               lastDeathInfo = { type: 'archer', damage: 10 * activeEvent.damageMult, metal: !!a.metal, size: null, method: 'arrow' };
@@ -2422,25 +3617,313 @@ const QUESTION_BANK_FILES={
       
       smokeClouds.forEach(drawSmokeCloud);
       poisonPools.forEach(drawPoisonPool);
+      ectoplasmMarkers.forEach(drawEctoplasm);
+      voidLasers.forEach(drawVoidLaser);
       shadowTraps.forEach(drawShadowTrap);
       rootSpikes.forEach(drawRootSpike);
+      healingOrbs.forEach(drawHealingOrb);
+      trollFireballs.forEach(drawTrollFireball);
+      arrowRainMarkers.forEach(drawArrowRainMarker);
+      samuraiServants.forEach(drawServant);
       enemies.forEach(drawEnemy);
       bullets.forEach(drawBullet);
       darts.forEach(drawDart);
+      naginataSpears.forEach(drawNaginataSpear);
+      bowArrows.forEach(drawBowArrow);
+      katanaSlashFX.forEach(drawKatanaSlash);
+      shockwaves.forEach(drawShockwave);
       enemyArrows.forEach(drawEnemyArrow);
       particles.forEach(drawParticle);
       drawPlayer();
     }
 
+    function drawKatanaSlash(fx) {
+      const now = Date.now();
+      const t = (now - fx.created) / fx.life;
+      if (t >= 1) return;
+      ctx.globalAlpha = 1 - t;
+      ctx.strokeStyle = '#e8e8ff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.arc(fx.x, fx.y, fx.range * (0.4 + t * 0.6), fx.angle - fx.arc / 2, fx.angle + fx.arc / 2);
+      ctx.stroke();
+
+      // Sword blade sweeping through the slash arc
+      const sweepT = Math.min(1, t / 0.7);
+      const currentAngle = fx.angle - fx.arc / 2 + fx.arc * sweepT;
+      const bladeRadius = fx.range * (0.5 + t * 0.5);
+      const bx = fx.x + Math.cos(currentAngle) * bladeRadius;
+      const by = fx.y + Math.sin(currentAngle) * bladeRadius;
+
+      ctx.save();
+      ctx.translate(bx, by);
+      ctx.rotate(currentAngle + Math.PI / 2);
+      ctx.fillStyle = '#f0f0ff';
+      ctx.beginPath();
+      ctx.moveTo(0, -18);
+      ctx.lineTo(3, 5);
+      ctx.lineTo(-3, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = '#9a9ab0';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      ctx.fillStyle = '#d4af37';
+      ctx.fillRect(-4, 5, 8, 3);
+      ctx.fillStyle = '#3a2a1a';
+      ctx.fillRect(-2, 8, 4, 7);
+      ctx.restore();
+
+      ctx.globalAlpha = 1;
+    }
+
+    function drawShockwave(sw) {
+      ctx.strokeStyle = 'rgba(255, 140, 0, 0.7)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(sw.x, sw.y, 12, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawNaginataSpear(sp) {
+      const angle = Math.atan2(sp.vy, sp.vx);
+      ctx.save();
+      ctx.translate(sp.x, sp.y);
+      ctx.rotate(angle);
+      ctx.fillStyle = '#6b4423';
+      ctx.fillRect(-18, -2, 30, 4);
+      ctx.fillStyle = '#d8d8e8';
+      ctx.beginPath();
+      ctx.moveTo(12, -5);
+      ctx.lineTo(24, 0);
+      ctx.lineTo(12, 5);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawBowArrow(ar) {
+      const angle = Math.atan2(ar.vy, ar.vx);
+      ctx.save();
+      ctx.translate(ar.x, ar.y);
+      ctx.rotate(angle);
+      ctx.strokeStyle = '#8b5a2b';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(6, 0); ctx.stroke();
+      ctx.fillStyle = ar.bleed ? '#c0392b' : '#c0c0c0';
+      ctx.beginPath();
+      ctx.moveTo(6, -3); ctx.lineTo(11, 0); ctx.lineTo(6, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawArrowRainMarker(m) {
+      const now = Date.now();
+      const t = (now - m.created) / m.fuse;
+      ctx.strokeStyle = `rgba(255, 60, 60, ${0.8 - t * 0.5})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 45 * t, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+
+    function drawServant(s) {
+      const bob = Math.sin(Date.now() * 0.006) * 3;
+
+      ctx.globalAlpha = 0.25;
+      ctx.fillStyle = '#4a148c';
+      ctx.beginPath();
+      ctx.arc(s.originX, s.originY, s.range, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+
+      ctx.globalAlpha = 0.85;
+      shadedRect(s.x - 10, s.y - 18 + bob, 20, 24, '#4a148c');
+      ctx.fillStyle = '#ce93d8';
+      ctx.fillRect(s.x - 6, s.y - 14 + bob, 12, 6);
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(s.x - 4, s.y - 12 + bob, 3, 3);
+      ctx.fillRect(s.x + 1, s.y - 12 + bob, 3, 3);
+      ctx.globalAlpha = 1;
+      if (s.maxHp > 1) {
+        ctx.fillStyle = '#2d1b3d';
+        ctx.fillRect(s.x - 12, s.y - 26 + bob, 24, 4);
+        ctx.fillStyle = '#9b59b6';
+        ctx.fillRect(s.x - 12, s.y - 26 + bob, 24 * (s.hp / s.maxHp), 4);
+      }
+    }
+
+    function drawEctoplasm(m) {
+      const now = Date.now();
+      const remaining = 1 - (now - m.created) / m.fuse;
+      ctx.globalAlpha = 0.6;
+      ctx.fillStyle = '#c8ffd4';
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 14, 0, Math.PI * 2 * (1 - remaining));
+      ctx.lineTo(m.x, m.y);
+      ctx.fill();
+      ctx.strokeStyle = '#7fffb0';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(m.x, m.y, 14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
+    function drawVoidLaser(l) {
+      const now = Date.now();
+      const alpha = Math.max(0, 1 - (now - l.created) / l.life);
+      ctx.strokeStyle = `rgba(178, 102, 255, ${alpha})`;
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(l.x1, l.y1);
+      ctx.lineTo(l.x2, l.y2);
+      ctx.stroke();
+    }
+
+    function drawTrollFireball(fb) {
+      const grad = ctx.createRadialGradient(fb.x, fb.y, 1, fb.x, fb.y, 12);
+      grad.addColorStop(0, '#fff59d');
+      grad.addColorStop(0.5, '#ff9800');
+      grad.addColorStop(1, '#d32f2f');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(fb.x, fb.y, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    function drawHealingOrb(orb) {
+      const pulse = Math.sin(Date.now() * 0.008) * 0.2 + 0.8;
+      ctx.globalAlpha = pulse;
+      const grad = ctx.createRadialGradient(orb.x, orb.y, 1, orb.x, orb.y, 11);
+      grad.addColorStop(0, '#c8ffd4');
+      grad.addColorStop(1, '#2ecc71');
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(orb.x, orb.y, 11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.strokeStyle = '#145a32';
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
     function gameLoop() {
       try{ update();
       draw();
+      updateLevelBar();
+      updateWeaponBars();
       requestAnimationFrame(gameLoop);
 
     } catch (err) {
         console.error("GAME LOOP CRASHED:", err);
     }
 }
+
+    function updateHomeStats() {
+      const w = progress.weapons;
+      const totalKills = w.shuriken.kills + w.dart.kills + w.smoke.kills + w.trap.kills;
+      document.getElementById('homeTotalCoins').textContent = progress.totalCoins;
+      document.getElementById('homeTotalKills').textContent = totalKills;
+      document.getElementById('homeKillsShuriken').textContent = w.shuriken.kills;
+      document.getElementById('homeKillsDart').textContent = w.dart.kills;
+      document.getElementById('homeKillsSmoke').textContent = w.smoke.kills;
+      document.getElementById('homeKillsTrap').textContent = w.trap.kills;
+    }
+
+    function updateLevelBar() {
+      const expReq = player.level * player.level * 50;
+      const pct = Math.max(0, Math.min(100, (player.exp / expReq) * 100));
+      document.getElementById('levelBarFill').style.width = pct + '%';
+      document.getElementById('levelBarText').textContent = `Level ${player.level} — ${player.exp}/${expReq} XP`;
+    }
+
+    function setBarFill(id, pct) {
+      const el = document.getElementById(id);
+      el.style.width = pct + '%';
+      if (pct >= 100) el.classList.add('ready'); else el.classList.remove('ready');
+    }
+
+    function updateWeaponBars() {
+      const now = Date.now();
+
+      if (player.character === 'samurai') {
+        document.querySelector('#bar-shuriken .weapon-bar-label').textContent = '⚔️ Katana';
+        document.getElementById('bar-shuriken').style.display = '';
+        let cooldown = upgrades.katanaCooldown;
+        if (pathLevel('katana', 'A') >= 1) cooldown *= 0.9;
+        cooldown *= (1 - Math.min(0.2, honor * 0.02));
+        setBarFill('fill-shuriken', Math.min(100, ((now - lastKatana) / cooldown) * 100));
+
+        const naginataBar = document.getElementById('bar-dart');
+        document.querySelector('#bar-dart .weapon-bar-label').textContent = '🗡️ Naginata';
+        if (upgrades.naginataUnlocked) {
+          naginataBar.style.display = '';
+          setBarFill('fill-dart', Math.min(100, ((now - lastNaginata) / upgrades.naginataCooldown) * 100));
+        } else {
+          naginataBar.style.display = 'none';
+        }
+
+        const bowBar = document.getElementById('bar-smoke');
+        document.querySelector('#bar-smoke .weapon-bar-label').textContent = '🏹 Bow';
+        if (upgrades.bowUnlocked) {
+          bowBar.style.display = '';
+          setBarFill('fill-smoke', Math.min(100, ((now - lastBow) / upgrades.bowCooldown) * 100));
+        } else {
+          bowBar.style.display = 'none';
+        }
+
+        const servantBar = document.getElementById('bar-trap');
+        document.querySelector('#bar-trap .weapon-bar-label').textContent = '👺 Servant';
+        if (upgrades.servantUnlocked) {
+          servantBar.style.display = '';
+          setBarFill('fill-trap', Math.min(100, ((now - lastServant) / upgrades.servantCooldown) * 100));
+        } else {
+          servantBar.style.display = 'none';
+        }
+        return;
+      }
+
+      document.querySelector('#bar-shuriken .weapon-bar-label').textContent = '🥷 Shuriken';
+      document.querySelector('#bar-dart .weapon-bar-label').textContent = '🏹 Dart';
+      document.querySelector('#bar-smoke .weapon-bar-label').textContent = '💨 Smoke Bomb';
+      document.querySelector('#bar-trap .weapon-bar-label').textContent = '💥 Shadow Trap';
+
+      let shurikenPct;
+      if (pathLevel('shuriken', 'B') >= 3) {
+        shurikenPct = shurikenMag.capacity > 0 ? (shurikenMag.current / shurikenMag.capacity) * 100 : 0;
+      } else {
+        const dynamicCooldown = Math.min(upgrades.cooldown * 1.2, upgrades.cooldown + 120);
+        shurikenPct = Math.min(100, ((now - lastShoot) / dynamicCooldown) * 100);
+      }
+      document.getElementById('bar-shuriken').style.display = '';
+      setBarFill('fill-shuriken', shurikenPct);
+
+      const dartBar = document.getElementById('bar-dart');
+      if (upgrades.dartUnlocked) {
+        dartBar.style.display = '';
+        setBarFill('fill-dart', Math.min(100, ((now - lastDart) / upgrades.dartCooldown) * 100));
+      } else {
+        dartBar.style.display = 'none';
+      }
+
+      const smokeBar = document.getElementById('bar-smoke');
+      if (upgrades.smokeUnlocked) {
+        smokeBar.style.display = '';
+        setBarFill('fill-smoke', Math.min(100, ((now - lastSmoke) / upgrades.smokeCooldown) * 100));
+      } else {
+        smokeBar.style.display = 'none';
+      }
+
+      const trapBar = document.getElementById('bar-trap');
+      if (upgrades.shadowUnlocked) {
+        trapBar.style.display = '';
+        setBarFill('fill-trap', Math.min(100, ((now - lastShadow) / upgrades.shadowCooldown) * 100));
+      } else {
+        trapBar.style.display = 'none';
+      }
+    }
 
     function updateUI() {
       const expReq = player.level * player.level * 50;
@@ -2461,6 +3944,10 @@ const QUESTION_BANK_FILES={
         game.paused = true;
         showLevelUpText();
         updateUI();
+        if (player.level % 10 === 0 && !bossMilestonesSpawned.has(player.level)) {
+          bossMilestonesSpawned.add(player.level);
+          spawnBoss(player.level);
+        }
         setTimeout(() => { startQuiz(false); }, 500);
       }
     }
@@ -2501,7 +3988,13 @@ const QUESTION_BANK_FILES={
     function answerQuestion(correct, btn) {
       const all = document.querySelectorAll('#quizOpts .option');
       all.forEach(o => o.classList.add('disabled'));
-      if (correct) { btn.classList.add('right'); quiz.correct++; }
+      if (correct) {
+        btn.classList.add('right');
+        quiz.correct++;
+        progress.questionsCorrect = (progress.questionsCorrect || 0) + 1;
+        saveProgress();
+        checkSamuraiUnlock();
+      }
       else { btn.classList.add('wrong'); }
       setTimeout(() => { quiz.index++; showQuestion(); }, 1000);
     }
@@ -2540,7 +4033,9 @@ const QUESTION_BANK_FILES={
       }, 900);
     }
 
-    function showUpgrades(numOptions = 1, hasBonus = false) {
+    function buildUpgradePool() {
+      if (player.character === 'samurai') return buildSamuraiUpgradePool();
+
       const currentWeaponUpgrades = [{ name: "⚡ Fire Rate +10%", desc: "Throw shurikens faster", apply: () => { upgrades.cooldown *= 0.9; }}];
 
       if (Math.random() < 0.5) {
@@ -2567,7 +4062,52 @@ const QUESTION_BANK_FILES={
       if (!upgrades.shadowUnlocked) newWeaponUnlocks.push({name: "🌑 UNLOCK Shadow Trap", desc: "Click to place explosive trap (10s CD)", apply: () => { upgrades.shadowUnlocked = true; lastShadow = 0; shadowReady = true; }});
       if (!upgrades.dartUnlocked) newWeaponUnlocks.push({name: "🎯 UNLOCK Blow Dart", desc: "Auto-fire 2 darts every 3s", apply: () => { upgrades.dartUnlocked = true; upgrades.dartAmount = 2; lastDart = Date.now(); }});
 
-      const allUpgrades = [...currentWeaponUpgrades, ...newWeaponUnlocks];
+      return [...currentWeaponUpgrades, ...newWeaponUnlocks];
+    }
+
+    function buildSamuraiUpgradePool() {
+      const pool = [{ name: "⚔️ Katana Damage +1", desc: "More damage per slash", apply: () => { upgrades.katanaDamage += 1; }}];
+
+      if (Math.random() < 0.5) {
+        pool.push({ name: "⚡ Katana Speed +10%", desc: "Swing faster", apply: () => { upgrades.katanaCooldown *= 0.9; }});
+      }
+
+      if (upgrades.naginataUnlocked) {
+        pool.push({name: "🗡️ Naginata Damage +1", desc: "More damage per sweep", apply: () => { upgrades.naginataDamage += 1; }});
+        if (Math.random() < 0.5) pool.push({name: "⚡ Naginata Speed +10%", desc: "Sweep more often", apply: () => { upgrades.naginataCooldown *= 0.9; }});
+      }
+
+      if (upgrades.bowUnlocked) {
+        pool.push({name: "🏹 Bow Damage +1", desc: "More damage per arrow", apply: () => { upgrades.bowDamage += 1; }});
+        if (Math.random() < 0.5) pool.push({name: "⚡ Bow Speed +10%", desc: "Draw faster", apply: () => { upgrades.bowCooldown *= 0.9; }});
+      }
+
+      if (upgrades.servantUnlocked) {
+        pool.push({name: "👺 Servant Damage +1", desc: "Spirit hits harder", apply: () => { upgrades.servantDamage += 1; }});
+      }
+
+      const unlocks = [];
+      if (!upgrades.naginataUnlocked) unlocks.push({name: "🗡️ UNLOCK Naginata", desc: "Auto-sweep in a cardinal direction", apply: () => { upgrades.naginataUnlocked = true; lastNaginata = Date.now(); }});
+      if (!upgrades.bowUnlocked) unlocks.push({name: "🏹 UNLOCK Bow", desc: "Auto-fire at a random enemy", apply: () => { upgrades.bowUnlocked = true; lastBow = Date.now(); }});
+      if (!upgrades.servantUnlocked) unlocks.push({name: "👺 UNLOCK Summoned Servant", desc: "Click to summon a spirit guardian", apply: () => { upgrades.servantUnlocked = true; lastServant = 0; servantReady = true; }});
+
+      return [...pool, ...unlocks];
+    }
+
+    function grantRandomUpgrades(n) {
+      const granted = [];
+      for (let i = 0; i < n; i++) {
+        const pool = buildUpgradePool();
+        if (pool.length === 0) continue;
+        const pick = pool[Math.floor(Math.random() * pool.length)];
+        pick.apply();
+        granted.push(pick.name);
+      }
+      return granted;
+    }
+
+    function showUpgrades(numOptions = 1, hasBonus = false) {
+      const allUpgrades = buildUpgradePool();
 
       if (hasBonus) {
         upgrades.cooldown *= 0.95;
@@ -2670,6 +4210,70 @@ const QUESTION_BANK_FILES={
           { name: '♾️ Persistent Trap', desc: "Doesn't despawn on a kill, only once its lifetime ends" },
           { name: '🩸 Bleeding Shrapnel', desc: 'Bleed becomes rupture: direct victims explode on death, spreading bleed nearby (repeatable, increases both)' }
         ]
+      },
+      katana: {
+        A: [
+          { name: '⚡ Faster Swing Speed', desc: 'Swing 10% faster' },
+          { name: '📏 Longer Slash Range', desc: 'The slash reaches further' },
+          { name: '🎯 Crit Slash', desc: 'Click on an enemy as you swing to deal 2x damage to it, even out of range' },
+          { name: '❗ Marked Foes', desc: 'Enemies can spawn marked; attacks deal double damage to them' },
+          { name: '🥋 Master Swordsman', desc: '+1 slash per swing (repeatable)' }
+        ],
+        B: [
+          { name: '💪 +20% Damage', desc: 'Deal 20% more damage' },
+          { name: '📐 Wider Swing Arc', desc: 'The slash covers a wider arc' },
+          { name: '💥 Heavy Cleave', desc: 'Slashes knock surviving enemies backward' },
+          { name: '🌊 Shockwave', desc: 'Killing an enemy sends a short shockwave forward' },
+          { name: "⚡ Titan's Strength", desc: '+1 shockwave, each at a different angle (repeatable)' }
+        ]
+      },
+      naginata: {
+        A: [
+          { name: '🧭 Spear Sense', desc: 'Higher chance to sweep toward an enemy direction' },
+          { name: '📏 Longer Reach', desc: 'The sweep reaches further' },
+          { name: '🎯 Piercing Sweep', desc: 'The sweep continues through all enemies it hits' },
+          { name: '♻️ Momentum', desc: 'Hitting 3+ enemies in one sweep refreshes part of the cooldown' },
+          { name: '📈 Extended Reach', desc: '+10% range and +10% attack speed (repeatable)' }
+        ],
+        B: [
+          { name: '➕ Twin Spears', desc: '2 spears launch at once, one from the opposite direction' },
+          { name: '🌀 Spinning Strike', desc: 'The spear spins briefly on hit before disappearing' },
+          { name: '🌪️ Spinning Assault', desc: 'Winds up with a full 360° spin around you before throwing' },
+          { name: '🧲 Inward Pull', desc: 'The spin pulls nearby enemies slightly inward before striking' },
+          { name: '⏱️ Longer Spin', desc: '+spin duration and hits (repeatable)' }
+        ]
+      },
+      bow: {
+        A: [
+          { name: '⚡ Faster Draw', desc: 'Draw and fire faster' },
+          { name: '💨 Faster Arrows', desc: 'Arrows travel faster' },
+          { name: '🎯 Piercing Arrow', desc: 'Arrows pierce through enemies and target the highest-HP enemy' },
+          { name: '♾️ Infinite Pierce', desc: 'Arrows inflict bleed' },
+          { name: '🩸 Deeper Wounds', desc: 'Bleed damage increases (repeatable)' }
+        ],
+        B: [
+          { name: '➕ +1 Arrow', desc: 'Fire an extra arrow' },
+          { name: '📐 Wider Spread', desc: 'Arrows fire in a wider spread' },
+          { name: '🌦️ Arrow Volley', desc: 'Fires a fan of arrows' },
+          { name: '☄️ Arrow Rain', desc: 'Arrows rain from the sky where the first arrow lands' },
+          { name: '➕ More Arrows', desc: '+1 arrow fired (repeatable)' }
+        ]
+      },
+      servant: {
+        A: [
+          { name: '📏 Extended Range', desc: 'The spirit attacks a larger radius around it' },
+          { name: '⏳ Lingering Spirit', desc: 'Survives one extra kill before fading' },
+          { name: '🛡️ Veteran Warrior', desc: 'Much higher health and a faster attack; healed by 1 on every kill' },
+          { name: '🎖️ Veteran Training', desc: '+1 damage (repeatable)' },
+          { name: '🎖️ Veteran Training+', desc: '+1 more damage (repeatable)' }
+        ],
+        B: [
+          { name: '⏱️ Reduced Cooldown', desc: 'Summon the spirit more often' },
+          { name: '⏳ Longer Lifetime', desc: 'The spirit lasts longer before fading' },
+          { name: '👥 Call Reinforcements', desc: 'Summons a second spirit' },
+          { name: '🎯 Coordinated Targets', desc: 'Spirits spread out and target different enemies' },
+          { name: '👥 More Reinforcements', desc: '+1 spirit (repeatable)' }
+        ]
       }
     };
 
@@ -2683,11 +4287,76 @@ const QUESTION_BANK_FILES={
       
       addShopItem(container, {id: 'powerup', name: '⭐ Starting Powerups', desc: 'Choose powerups before run', base: 40, mult: 1.5, owned: progress.powerupStart, canBuy: true});
 
-      for (const key of ['shuriken', 'dart', 'smoke', 'trap']) {
+      renderPowerupShopSection(container);
+
+      if (progress.samuraiUnlocked) {
+        const charDiv = document.createElement('div');
+        charDiv.className = 'shop-item';
+        charDiv.innerHTML = `
+          <div class="shop-header"><div class="shop-name">Shop weapons for:</div></div>
+          <button class="shop-btn" id="shopCharNinja" style="margin-bottom:6px;">${progress.selectedCharacter === 'ninja' ? '✅ ' : ''}🥷 Ninja</button>
+          <button class="shop-btn" id="shopCharSamurai">${progress.selectedCharacter === 'samurai' ? '✅ ' : ''}⚔️ Samurai</button>
+        `;
+        container.appendChild(charDiv);
+        document.getElementById('shopCharNinja').onclick = () => { progress.selectedCharacter = 'ninja'; renderShop(); };
+        document.getElementById('shopCharSamurai').onclick = () => { progress.selectedCharacter = 'samurai'; renderShop(); };
+      }
+
+      const weaponKeys = progress.selectedCharacter === 'samurai' ? SAMURAI_WEAPON_KEYS : NINJA_WEAPON_KEYS;
+      for (const key of weaponKeys) {
         renderWeaponShopSection(container, key);
       }
 
       document.getElementById('totalCoins').textContent = progress.totalCoins;
+    }
+
+    function renderPowerupShopSection(container) {
+      const section = document.createElement('div');
+      section.innerHTML = '<h3 style="color: #d4af37; margin: 15px 0 10px 0; font-size: 20px;">🎲 Single-Use Powerups</h3>';
+      container.appendChild(section);
+
+      const maxChoices = 1 + Math.floor(progress.questionsCorrect / 100);
+      const noteDiv = document.createElement('div');
+      noteDiv.className = 'shop-item';
+      noteDiv.innerHTML = `<div class="shop-desc">Pick up to <b>${maxChoices}</b> for your <b>next run only</b>. Each one starts that run with 4 bonus quiz questions — how many you get right decides how strong it is. Your picks reset once the run ends.</div>`;
+      container.appendChild(noteDiv);
+
+      for (const key in SINGLE_USE_POWERUPS) {
+        const info = SINGLE_USE_POWERUPS[key];
+        const div = document.createElement('div');
+        div.className = 'shop-item';
+
+        if (progress.questionsCorrect < info.unlockAt) {
+          div.innerHTML = `
+            <div class="shop-header"><div class="shop-name">🔒 ${info.name}</div></div>
+            <div class="shop-desc">Unlocks at ${info.unlockAt} correct quiz answers (${Math.min(progress.questionsCorrect, info.unlockAt)}/${info.unlockAt})</div>
+          `;
+          container.appendChild(div);
+          continue;
+        }
+
+        const selected = progress.selectedPowerups.includes(key);
+        const atCap = progress.selectedPowerups.length >= maxChoices && !selected;
+        div.innerHTML = `
+          <div class="shop-header"><div class="shop-name">${info.name}</div></div>
+          <div class="shop-desc">${info.desc}</div>
+          <button class="shop-btn" id="pu_${key}" ${atCap ? 'disabled' : ''}>${selected ? '✅ Selected — click to unselect' : (atCap ? 'Selection full' : 'Select for next run')}</button>
+        `;
+        container.appendChild(div);
+        document.getElementById(`pu_${key}`).onclick = () => togglePowerupSelection(key);
+      }
+    }
+
+    function togglePowerupSelection(key) {
+      const idx = progress.selectedPowerups.indexOf(key);
+      if (idx >= 0) {
+        progress.selectedPowerups.splice(idx, 1);
+      } else {
+        const maxChoices = 1 + Math.floor(progress.questionsCorrect / 100);
+        if (progress.selectedPowerups.length >= maxChoices) return;
+        progress.selectedPowerups.push(key);
+      }
+      renderShop();
     }
 
     function renderWeaponShopSection(container, key) {
@@ -2851,6 +4520,7 @@ const QUESTION_BANK_FILES={
       progress.totalCoins -= cost;
       const w = progress.weapons[key];
       if (path === 'A') w.levelA++; else w.levelB++;
+      totalUpgradesPurchased++;
       saveProgress();
       renderShop();
       updateUI();
@@ -2862,6 +4532,7 @@ const QUESTION_BANK_FILES={
       const w = progress.weapons[key];
       w.path = path;
       w.level = 3;
+      totalUpgradesPurchased++;
       saveProgress();
       renderShop();
       updateUI();
@@ -2873,6 +4544,7 @@ const QUESTION_BANK_FILES={
       const w = progress.weapons[key];
       w.level++;
       if (w.level >= 5) w.repeatBuys++;
+      totalUpgradesPurchased++;
       saveProgress();
       renderShop();
       updateUI();
@@ -2945,18 +4617,26 @@ const QUESTION_BANK_FILES={
 
     function reset() {
       lastDeathInfo = null;
+      runPowerupEffects = { killValueMult: 1, coinBonusPerKill: 0 };
       player.x = 400; player.y = 300;
       player.hp = 100; player.maxHp = 100;
       player.level = 1; player.exp = 0; player.kills = 0;
+      player.character = progress.selectedCharacter === 'samurai' && progress.samuraiUnlocked ? 'samurai' : 'ninja';
 
       enemies = []; bullets = []; particles = []; enemyArrows = []; shadowTraps = []; darts = []; rootSpikes = [];
       smokeClouds = []; poisonPools = [];
+      healingOrbs = []; trollFireballs = []; ectoplasmMarkers = []; voidLasers = [];
+      katanaSlashFX = []; shockwaves = []; naginataSpears = []; bowArrows = []; arrowRainMarkers = []; samuraiServants = [];
+      honor = 0;
+      bossMilestonesSpawned = new Set();
+      activeBossId = null;
       nextEnemyId = 1;
       nextRootId = 1;
 
       game.time = 0; game.frame = 0;
       lastShoot = 0; lastSmoke = 0; lastShadow = 0; lastDart = 0;
-      shadowReady = true;
+      lastKatana = 0; lastNaginata = 0; lastBow = 0; lastServant = 0;
+      shadowReady = true; servantReady = true;
       targetX = 401; targetY = 300;
 
       upgrades.projSpeed = 5;
@@ -2984,6 +4664,28 @@ const QUESTION_BANK_FILES={
       shurikenMag.current = shurikenMag.capacity;
       shurikenMag.lastRegen = Date.now();
 
+      upgrades.katanaCooldown = 900;
+      upgrades.katanaDamage = 3;
+      upgrades.katanaRange = 105;
+      upgrades.katanaArc = 70;
+
+      upgrades.naginataUnlocked = wUnlocked('naginata');
+      upgrades.naginataCooldown = 1600;
+      upgrades.naginataDamage = 3;
+      upgrades.naginataRange = 160;
+      upgrades.naginataSpeed = 3;
+
+      upgrades.bowUnlocked = wUnlocked('bow');
+      upgrades.bowCooldown = 2600;
+      upgrades.bowDamage = 2;
+      upgrades.bowSpeed = 4.5;
+
+      upgrades.servantUnlocked = wUnlocked('servant');
+      upgrades.servantDamage = 1;
+      upgrades.servantCooldown = 8000;
+      if (pathLevel('servant', 'B') >= 1) upgrades.servantCooldown *= 0.85;
+      upgrades.servantLifetime = 15000;
+
       progress.runCoins = 10;
 
       updateUI();
@@ -2999,14 +4701,113 @@ const QUESTION_BANK_FILES={
         document.getElementById('eventMessage').textContent = message;
         document.getElementById('eventOverlay').classList.add('show');
       } else {
-        startPowerupPhase();
+        beginSingleUsePowerupQuizzes();
       }
     }
 
     document.getElementById('eventContinueBtn').addEventListener('click', () => {
       document.getElementById('eventOverlay').classList.remove('show');
-      startPowerupPhase();
+      beginSingleUsePowerupQuizzes();
     });
+
+    let powerupQuizQueue = [];
+    let powerupQuizState = { key: null, index: 0, correct: 0, questionCount: 4 };
+
+    function beginSingleUsePowerupQuizzes() {
+      powerupQuizQueue = progress.selectedPowerups.slice();
+      progress.selectedPowerups = []; // must be re-selected in the shop for each future run
+      runNextPowerupUnlockQuiz();
+    }
+
+    function runNextPowerupUnlockQuiz() {
+      if (powerupQuizQueue.length === 0 || !questions || questions.length === 0) {
+        startPowerupPhase();
+        return;
+      }
+      const key = powerupQuizQueue.shift();
+      powerupQuizState = { key, index: 0, correct: 0, questionCount: 4 };
+      game.paused = true;
+      document.getElementById('quizResult').style.display = 'none';
+      document.getElementById('quizOverlay').classList.add('show');
+      showPowerupUnlockQuestion();
+    }
+
+    function showPowerupUnlockQuestion() {
+      if (powerupQuizState.index >= powerupQuizState.questionCount) { finishPowerupUnlockQuiz(); return; }
+      const q = questions[Math.floor(Math.random() * questions.length)];
+      const info = SINGLE_USE_POWERUPS[powerupQuizState.key];
+      document.getElementById('quizNum').textContent = `${info.name} — Q${powerupQuizState.index + 1}/${powerupQuizState.questionCount}`;
+      document.getElementById('quizQ').textContent = q.q;
+
+      const container = document.getElementById('quizOpts');
+      container.innerHTML = '';
+      q.o.map((opt, idx) => ({ text: opt, isCorrect: idx === q.a })).sort(() => Math.random() - 0.5).forEach(opt => {
+        const btn = document.createElement('div');
+        btn.className = 'option';
+        btn.textContent = opt.text;
+        btn.onclick = () => answerPowerupUnlockQuestion(opt.isCorrect, btn);
+        container.appendChild(btn);
+      });
+    }
+
+    function answerPowerupUnlockQuestion(correct, btn) {
+      const all = document.querySelectorAll('#quizOpts .option');
+      all.forEach(o => o.classList.add('disabled'));
+      if (correct) {
+        btn.classList.add('right');
+        powerupQuizState.correct++;
+        progress.questionsCorrect = (progress.questionsCorrect || 0) + 1;
+        saveProgress();
+        checkSamuraiUnlock();
+      } else {
+        btn.classList.add('wrong');
+      }
+      setTimeout(() => { powerupQuizState.index++; showPowerupUnlockQuestion(); }, 1000);
+    }
+
+    function finishPowerupUnlockQuiz() {
+      const tier = powerupQuizState.correct;
+      const grantedList = applySingleUsePowerupEffect(powerupQuizState.key, tier);
+
+      document.getElementById('quizNum').textContent = 'Complete!';
+      document.getElementById('quizQ').textContent = '';
+      document.getElementById('quizOpts').innerHTML = '';
+      const res = document.getElementById('quizResult');
+      res.style.display = 'block';
+      const info = SINGLE_USE_POWERUPS[powerupQuizState.key];
+      const pct = tier * 25;
+
+      let extra = '';
+      if (grantedList && grantedList.length > 0) {
+        const rows = grantedList.map(name => `<div>• ${name}</div>`).join('');
+        extra = `<div style="margin-top: 10px; font-size: 15px; color: #fff;">You received:${rows}</div>`;
+      } else if (powerupQuizState.key === 'randomRewards' && tier > 0) {
+        extra = `<div style="margin-top: 10px; font-size: 15px; color: #aaa;">Nothing was available to grant.</div>`;
+      }
+
+      res.innerHTML = `<div style="font-size: 22px; margin-bottom: 10px;">${info.name}</div>
+                        <div style="font-size: 18px; color: #00d4ff;">${powerupQuizState.correct}/4 correct — active at ${pct}% strength</div>${extra}`;
+
+      setTimeout(() => {
+        document.getElementById('quizOverlay').classList.remove('show');
+        runNextPowerupUnlockQuiz();
+      }, grantedList && grantedList.length > 0 ? 2800 : 1800);
+    }
+
+    function applySingleUsePowerupEffect(key, tier) {
+      if (tier <= 0) return null;
+      if (key === 'killValue') {
+        runPowerupEffects.killValueMult = 1 + tier;
+      } else if (key === 'highLevel') {
+        player.level = 1 + tier;
+        updateUI();
+      } else if (key === 'randomRewards') {
+        return grantRandomUpgrades(tier);
+      } else if (key === 'coinsPerKill') {
+        runPowerupEffects.coinBonusPerKill = 1 + tier;
+      }
+      return null;
+    }
 
     function startPowerupPhase() {
       if (progress.powerupStart > 0) {
@@ -3033,6 +4834,12 @@ const QUESTION_BANK_FILES={
       const rect = canvas.getBoundingClientRect();
       const clickX = e.clientX - rect.left;
       const clickY = e.clientY - rect.top;
+
+      if (player.character === 'samurai') {
+        if (upgrades.servantUnlocked) placeServant(clickX, clickY);
+        targetX = clickX; targetY = clickY;
+        return;
+      }
 
       if (upgrades.shadowUnlocked && shadowReady) {
         const now = Date.now();
@@ -3069,6 +4876,25 @@ const QUESTION_BANK_FILES={
         .value
         .trim()
         .toLowerCase();
+
+    if (code === 'reset') {
+        progress.totalCoins = 0;
+        for (const key of ALL_WEAPON_KEYS) {
+          progress.weapons[key].kills = 0;
+          progress.weapons[key].unlocked = (key === 'shuriken' || key === 'katana');
+        }
+        progress.samuraiUnlocked = false;
+        progress.playedCodes = [];
+        progress.questionsCorrect = 0;
+        progress.selectedCharacter = 'ninja';
+        saveProgress();
+        updateHomeStats();
+        renderCharacterSelectors();
+        document.getElementById('bankCode').value = '';
+        document.getElementById("bankMessage").textContent =
+            "✅ Progress reset — coins & kills back to 0. Enter a code to start.";
+        return;
+    }
 
     const loaded = await loadQuestionBank(code);
 
