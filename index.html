@@ -2274,7 +2274,12 @@ const QUESTION_BANK_FILES={
       if (now - lastBow < cooldown) return;
 
       let target;
-      if (levelA >= 3) {
+      const archers = enemies.filter(e => !e.dead && !e.phased && e.type === 'archer');
+      if (archers.length > 0) {
+        target = levelA >= 3
+          ? archers.sort((a, b) => b.hp - a.hp)[0]
+          : archers.sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y))[0];
+      } else if (levelA >= 3) {
         target = enemies.filter(e => !e.dead && !e.phased).sort((a, b) => b.hp - a.hp)[0];
       } else {
         target = findNearest(player.x, player.y, []);
