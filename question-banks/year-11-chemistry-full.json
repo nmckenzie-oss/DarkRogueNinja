@@ -598,5 +598,405 @@
     "q": "Ocean acidification occurs because carbon dioxide reacts with:",
     "o": ["Nitrogen", "Seawater", "Sand", "Iron"],
     "a": 1
+  },
+  {
+    "q": "Which statement best explains why molten sodium chloride conducts electricity while solid sodium chloride does not?",
+    "o": [
+      "Molten NaCl contains free electrons, while solid NaCl does not.",
+      "Solid NaCl has ions fixed in a lattice, while molten NaCl has mobile ions that carry charge.",
+      "Solid NaCl contains neutral sodium atoms, while molten NaCl contains ions.",
+      "The ionic bonds disappear completely when NaCl melts."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which statement most accurately explains why ionic compounds have high melting points?",
+    "o": [
+      "Ionic bonds are covalent in nature.",
+      "Large numbers of strong electrostatic attractions throughout the lattice require significant energy to overcome.",
+      "Individual ions possess high kinetic energy.",
+      "The ions are chemically bonded to every neighbouring atom."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which property would most strongly suggest that an unknown solid is metallic rather than ionic?",
+    "o": [
+      "High melting point",
+      "Electrical conductivity as a solid combined with malleability",
+      "Conductivity only when dissolved",
+      "Brittleness and high melting point"
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which pair of substances would be expected to have the greatest difference in boiling point?",
+    "o": [
+      "Propane and butane",
+      "Pentane and hexane",
+      "Methane and decane",
+      "Hexene and hexane"
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which statement about intermolecular forces is the most accurate?",
+    "o": [
+      "They break during combustion.",
+      "They determine many physical properties without changing molecular identity.",
+      "They are stronger than covalent bonds.",
+      "They only exist in solids."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which statement is NOT consistent with VSEPR theory?",
+    "o": [
+      "Electron pairs repel one another.",
+      "Lone pairs repel more strongly than bonding pairs.",
+      "Bonding pairs always repel more strongly than lone pairs.",
+      "Molecular shape minimises electron pair repulsion."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which compound would have the strongest intermolecular forces?",
+    "o": [
+      "CH₄",
+      "C₂H₆",
+      "C₆H₁₄",
+      "C₁₀H₂₂"
+    ],
+    "a": 3
+  },
+  {
+    "q": "Which explanation best describes why branching lowers the boiling point of hydrocarbons?",
+    "o": [
+      "Branched molecules have stronger covalent bonds.",
+      "Branched molecules have a smaller surface area, reducing intermolecular attractions.",
+      "Branched molecules contain fewer electrons.",
+      "Branched molecules are polar."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which statement best distinguishes an alkene from an alkane?",
+    "o": [
+      "Alkenes contain fewer carbon atoms.",
+      "Alkenes contain at least one carbon-carbon double bond, making them unsaturated.",
+      "Alkenes always have lower boiling points.",
+      "Alkenes always contain oxygen."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which process does NOT involve an addition reaction?",
+    "o": [
+      "Hydrogenation of an alkene.",
+      "Hydration of an alkene.",
+      "Bromination of an alkene.",
+      "Cracking of an alkane."
+    ],
+    "a": 3
+  },
+  {
+    "q": "Which observation would provide the strongest evidence that a hydrocarbon is unsaturated?",
+    "o": [
+      "It burns with a blue flame.",
+      "It is insoluble in water.",
+      "It rapidly decolourises bromine water.",
+      "It has a low boiling point."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which pair of hydrocarbons are structural isomers?",
+    "o": [
+      "C₂H₄ and C₂H₂",
+      "C₄H₁₀ and C₄H₁₀ (branched)",
+      "C₃H₆ and C₃H₈",
+      "C₅H₁₂ and C₆H₁₄"
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which statement best explains why complete combustion is preferred over incomplete combustion?",
+    "o": [
+      "It releases less energy.",
+      "It produces carbon monoxide instead of carbon dioxide.",
+      "It maximises energy release while minimising toxic products.",
+      "It occurs without oxygen."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which statement is most correct regarding carbon monoxide?",
+    "o": [
+      "It is less dense than air.",
+      "It is produced during complete combustion.",
+      "It binds strongly to haemoglobin, reducing oxygen transport.",
+      "It causes acid rain."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which statement best describes electrostatic attraction in metallic bonding?",
+    "o": [
+      "Attraction between positive ions and negative ions.",
+      "Attraction between positive metal ions and delocalised electrons.",
+      "Attraction between neighbouring atoms.",
+      "Attraction between molecules."
+    ],
+    "a": 1
+  },
+  {
+    "q": "During cracking, which statement is always true?",
+    "o": [
+      "Only alkanes are produced.",
+      "At least one smaller hydrocarbon is formed.",
+      "Oxygen is required.",
+      "Carbon dioxide is produced."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which property would NOT normally increase with hydrocarbon chain length?",
+    "o": [
+      "Boiling point",
+      "Molar mass",
+      "Intermolecular forces",
+      "Volatility"
+    ],
+    "a": 3
+  },
+  {
+    "q": "Which statement best explains why ionic compounds are brittle?",
+    "o": [
+      "The lattice collapses because electrons escape.",
+      "Shifting layers align like charges, causing strong repulsion.",
+      "Covalent bonds are broken.",
+      "Molecules separate."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which of the following would be least useful for identifying an unknown hydrocarbon?",
+    "o": [
+      "Bromine water",
+      "Boiling point",
+      "Solubility in water",
+      "Combustion products"
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which statement is the most scientifically complete?",
+    "o": [
+      "Ionic compounds contain ions.",
+      "Ionic compounds consist of oppositely charged ions arranged in a giant lattice held together by electrostatic attraction.",
+      "Ionic compounds contain atoms.",
+      "Ionic compounds contain molecules."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which answer best explains why metals are both malleable and electrical conductors?",
+    "o": [
+      "Their atoms slide over one another.",
+      "Delocalised electrons both maintain bonding during deformation and carry electrical charge.",
+      "They contain positive ions.",
+      "Metallic bonds are weak."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which property does NOT belong with the others?",
+    "o": [
+      "High melting point",
+      "Brittle",
+      "Conducts electricity when molten",
+      "Malleable"
+    ],
+    "a": 3
+  },
+  {
+    "q": "Which statement is most correct about alkanes?",
+    "o": [
+      "They are hydrocarbons.",
+      "They contain only single bonds.",
+      "They are saturated hydrocarbons containing only carbon-carbon single bonds.",
+      "They have the formula CₙH₂ₙ₊₂."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which characteristic is LEAST useful when identifying an ionic compound?",
+    "o": [
+      "Brittleness",
+      "High melting point",
+      "Ability to conduct electricity when molten",
+      "Colour"
+    ],
+    "a": 3
+  },
+  {
+    "q": "All of the following are consequences of increasing hydrocarbon chain length EXCEPT:",
+    "o": [
+      "Increased boiling point",
+      "Increased intermolecular forces",
+      "Increased volatility",
+      "Increased molar mass"
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which answer is the best description of a covalent bond?",
+    "o": [
+      "Electrons are shared.",
+      "Two atoms share one or more pairs of electrons.",
+      "Non-metals bond together.",
+      "Atoms become stable."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which group contains ONLY unsaturated hydrocarbons?",
+    "o": [
+      "Ethane, Propane, Butane",
+      "Ethene, Propene, Butyne",
+      "Methane, Ethene, Pentane",
+      "Propane, Butene, Pentane"
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which statement about bromine water is most correct?",
+    "o": [
+      "It detects hydrocarbons.",
+      "It reacts with unsaturated hydrocarbons causing the orange colour to disappear.",
+      "It reacts with all hydrocarbons.",
+      "It reacts only with alkanes."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which of the following does NOT fit the group?",
+    "o": [
+      "Alkene",
+      "Alkyne",
+      "Alkane",
+      "Unsaturated hydrocarbon"
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which statement is the best explanation for why methane boils at a much lower temperature than decane?",
+    "o": [
+      "Methane is smaller.",
+      "Methane has weaker intermolecular forces because it has fewer electrons and a smaller surface area.",
+      "Methane is more reactive.",
+      "Methane has weaker covalent bonds."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which observation would provide the strongest evidence that combustion was incomplete?",
+    "o": [
+      "Blue flame",
+      "Colourless flame",
+      "Yellow smoky flame with soot deposits.",
+      "High temperature."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which statement about structural isomers is most correct?",
+    "o": [
+      "They have different names.",
+      "They have different molecular formulas.",
+      "They have the same molecular formula but different structural arrangements.",
+      "They always have identical boiling points."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which pair of properties best identifies a metal?",
+    "o": [
+      "Brittle and soluble",
+      "Conductive as a solid and malleable",
+      "Conductive only when molten",
+      "Low melting point and brittle"
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which statement about ionic lattices is FALSE?",
+    "o": [
+      "They consist of repeating ions.",
+      "They contain equal numbers of positive and negative charges overall.",
+      "They are made from individual molecules.",
+      "They are held together by electrostatic attraction."
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which answer best describes why hydrocarbons are generally insoluble in water?",
+    "o": [
+      "They have no electrons.",
+      "They are non-polar while water is polar.",
+      "They are too heavy.",
+      "They contain carbon."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which is the best explanation for why longer hydrocarbons are less volatile?",
+    "o": [
+      "They are heavier.",
+      "Stronger intermolecular attractions require more energy for molecules to escape the liquid.",
+      "They contain more carbon atoms.",
+      "They are darker in colour."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which property would most likely remain unchanged after melting an ionic compound?",
+    "o": [
+      "Shape",
+      "Ability to conduct electricity",
+      "Chemical composition",
+      "Particle movement"
+    ],
+    "a": 2
+  },
+  {
+    "q": "Which group contains substances that are all hydrocarbons?",
+    "o": [
+      "CH₄, CO₂, C₂H₆",
+      "CH₄, C₂H₄, C₃H₈",
+      "CO₂, H₂O, CH₄",
+      "C₂H₅OH, CH₄, C₂H₆"
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which answer is the best definition of volatility?",
+    "o": [
+      "The tendency of a substance to boil.",
+      "The tendency of a substance to evaporate easily.",
+      "The ability of a substance to burn.",
+      "The ability of a substance to dissolve."
+    ],
+    "a": 1
+  },
+  {
+    "q": "Which characteristic would be the least reliable by itself for identifying a hydrocarbon?",
+    "o": [
+      "It contains carbon and hydrogen.",
+      "It burns in oxygen.",
+      "It is insoluble in water.",
+      "It is colourless."
+    ],
+    "a": 3
   }
 ]
