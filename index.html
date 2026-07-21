@@ -571,6 +571,7 @@
     let progress = {
       totalCoins: 0, runCoins: 0, runNumber: 1, deaths: 0, powerupStart: 0,
       questionsCorrect: 0, selectedPowerups: [],
+      questionWeights: {},
       playedCodes: [], samuraiUnlocked: false, selectedCharacter: 'ninja',
       weapons: {
         shuriken: { unlocked: true, kills: 0, level: 0, path: null, levelA: 0, levelB: 0, repeatBuys: 0 },
@@ -595,6 +596,7 @@
           questionsCorrect: progress.questionsCorrect,
           playedCodes: progress.playedCodes,
           samuraiUnlocked: progress.samuraiUnlocked,
+          questionWeights: progress.questionWeights,
           weaponKills
         };
         localStorage.setItem(SAVE_KEY, JSON.stringify(slim));
@@ -611,6 +613,7 @@
         if (typeof saved.questionsCorrect === 'number') progress.questionsCorrect = saved.questionsCorrect;
         if (Array.isArray(saved.playedCodes)) progress.playedCodes = saved.playedCodes;
         if (saved.samuraiUnlocked) progress.samuraiUnlocked = true;
+        if (saved.questionWeights && typeof saved.questionWeights === 'object') progress.questionWeights = saved.questionWeights;
         if (saved.weaponKills) {
           for (const key of ALL_WEAPON_KEYS) {
             const k = saved.weaponKills[key];
@@ -4093,6 +4096,27 @@ const QUESTION_BANK_FILES={
       }
     }
 
+    function getQuestionWeight(q) {
+      const w = progress.questionWeights[q.q];
+      return typeof w === 'number' ? w : 1;
+    }
+    function adjustQuestionWeight(q, correct) {
+      let w = getQuestionWeight(q);
+      w = correct ? w * 0.5 : w * 2;
+      w = Math.max(0.1, Math.min(8, w));
+      progress.questionWeights[q.q] = w;
+    }
+    function weightedPickQuestion(pool) {
+      const weights = pool.map(getQuestionWeight);
+      const total = weights.reduce((a, b) => a + b, 0);
+      let r = Math.random() * total;
+      for (let i = 0; i < pool.length; i++) {
+        r -= weights[i];
+        if (r <= 0) return pool[i];
+      }
+      return pool[pool.length - 1];
+    }
+
     function startQuiz(forPowerup) {
       game.paused = true;
       quiz.index = 0;
@@ -4109,9 +4133,10 @@ const QUESTION_BANK_FILES={
       if (quiz.index >= quiz.questionCount) { showQuizResult(); return; }
       const available = questions.filter((q, idx) => !quiz.usedQuestions.includes(idx));
       const pool = available.length > 0 ? available : questions;
-      const q = pool[Math.floor(Math.random() * pool.length)];
+      const q = weightedPickQuestion(pool);
       const originalIndex = questions.indexOf(q);
       quiz.usedQuestions.push(originalIndex);
+      quiz.currentQ = q;
       document.getElementById('quizNum').textContent = `Question ${quiz.index + 1}/${quiz.questionCount}`;
       document.getElementById('quizQ').textContent = q.q;
 
@@ -4129,6 +4154,7 @@ const QUESTION_BANK_FILES={
     function answerQuestion(correct, btn) {
       const all = document.querySelectorAll('#quizOpts .option');
       all.forEach(o => o.classList.add('disabled'));
+      if (quiz.currentQ) adjustQuestionWeight(quiz.currentQ, correct);
       if (correct) {
         btn.classList.add('right');
         quiz.correct++;
@@ -4136,7 +4162,7 @@ const QUESTION_BANK_FILES={
         saveProgress();
         checkSamuraiUnlock();
       }
-      else { btn.classList.add('wrong'); }
+      else { btn.classList.add('wrong'); saveProgress(); }
       setTimeout(() => { quiz.index++; showQuestion(); }, 1000);
     }
 
@@ -4877,7 +4903,8 @@ const QUESTION_BANK_FILES={
 
     function showPowerupUnlockQuestion() {
       if (powerupQuizState.index >= powerupQuizState.questionCount) { finishPowerupUnlockQuiz(); return; }
-      const q = questions[Math.floor(Math.random() * questions.length)];
+      const q = weightedPickQuestion(questions);
+      powerupQuizState.currentQ = q;
       const info = SINGLE_USE_POWERUPS[powerupQuizState.key];
       document.getElementById('quizNum').textContent = `${info.name} — Q${powerupQuizState.index + 1}/${powerupQuizState.questionCount}`;
       document.getElementById('quizQ').textContent = q.q;
@@ -4896,6 +4923,7 @@ const QUESTION_BANK_FILES={
     function answerPowerupUnlockQuestion(correct, btn) {
       const all = document.querySelectorAll('#quizOpts .option');
       all.forEach(o => o.classList.add('disabled'));
+      if (powerupQuizState.currentQ) adjustQuestionWeight(powerupQuizState.currentQ, correct);
       if (correct) {
         btn.classList.add('right');
         powerupQuizState.correct++;
@@ -4904,6 +4932,7 @@ const QUESTION_BANK_FILES={
         checkSamuraiUnlock();
       } else {
         btn.classList.add('wrong');
+        saveProgress();
       }
       setTimeout(() => { powerupQuizState.index++; showPowerupUnlockQuestion(); }, 1000);
     }
