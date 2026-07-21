@@ -2,7 +2,7 @@
 <html lang="en">
 <head><script>window["__codeletBootstrap__"]=JSON.parse('{"A":"A","B":"20260630-05-8900874"}');</script><script src="/_sdk/e4192b04afde3ce7.telemetry_sdk.js" integrity="sha512-4eZpyKBd3YJnsIPrIpaBqo7QT5UZ6+KSFXkSu1IQiB7jKM8y67ChRhZ5Yh6JfuOJCbPdISiNcS6nLKZzIMG1uQ=="></script>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
   <title>Dark Rogue</title>
   <script src="/_sdk/55a31eac937b0c74.element_sdk.js" integrity="sha512-0kIuEfhRPNmBFXTjGHEKf+empPPO/fnvfhJQ9f7lB5PiWMx4+JpB4JhdGG3l/nAaQlpbbl3k4UyChI6a2CursA=="></script>
   <style>
@@ -16,8 +16,10 @@
       font-family: 'Lexend', sans-serif;
       background: #0a0a0a;
       overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-text-size-adjust: 100%;
     }
-    html { height: 100%; }
+    html { height: 100%; overscroll-behavior: none; }
 
     #app {
       width: 100%;
@@ -26,12 +28,17 @@
       align-items: center;
       justify-content: center;
       background: linear-gradient(135deg, #1a0a2e 0%, #0f051d 100%);
+      padding: 8px;
+      box-sizing: border-box;
     }
 
     canvas {
       border: 4px solid #6a0572;
       box-shadow: 0 0 30px rgba(106, 5, 114, 0.6);
       display: block;
+      width: 100%;
+      height: auto;
+      touch-action: none;
     }
 
     .hud {
@@ -60,7 +67,7 @@
       display: flex;
       flex-direction: column;
       align-items: stretch;
-      width: 800px;
+      width: min(800px, 100%, calc((100vh - 130px) * 4 / 3));
     }
 
     #levelBarWrap {
@@ -271,6 +278,33 @@
       0% { left: -100%; opacity: 1; }
       50% { left: 0%; opacity: 1; }
       100% { left: 100%; opacity: 1; }
+    }
+
+    @media (max-width: 480px) {
+      .hud {
+        top: 8px;
+        left: 8px;
+        right: 8px;
+      }
+      .panel {
+        padding: 6px 8px;
+        font-size: 11px;
+        border-width: 2px;
+        border-radius: 6px;
+      }
+      .panel div { margin: 2px 0; }
+      #app { padding: 4px; }
+      #gameWrap { max-width: none; }
+      canvas { border-width: 2px; }
+      .weapon-bar-label { font-size: 9px; }
+      #weaponBars { padding: 5px 6px; gap: 4px; }
+      #levelBarText { font-size: 10px; }
+      .box { padding: 16px; }
+      .title { font-size: 24px; }
+      .text { font-size: 13px; }
+      .text2 { font-size: 16px; }
+      .btn { padding: 10px 20px; font-size: 15px; }
+      .option { padding: 10px; font-size: 14px; }
     }
   </style>
 </head>
@@ -4941,8 +4975,10 @@ const QUESTION_BANK_FILES={
     canvas.addEventListener('click', (e) => {
       if (!game.active || game.paused) return;
       const rect = canvas.getBoundingClientRect();
-      const clickX = e.clientX - rect.left;
-      const clickY = e.clientY - rect.top;
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const clickX = (e.clientX - rect.left) * scaleX;
+      const clickY = (e.clientY - rect.top) * scaleY;
 
       if (player.character === 'samurai') {
         if (upgrades.servantUnlocked) placeServant(clickX, clickY);
